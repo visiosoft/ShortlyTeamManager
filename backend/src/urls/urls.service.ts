@@ -38,7 +38,7 @@ export class UrlsService {
       originalUrl,
       shortCode,
       userId: new Types.ObjectId(userId),
-      teamId: new Types.ObjectId(teamId),
+      teamId: Types.ObjectId.createFromHexString(teamId),
       title,
       description,
     });
@@ -88,12 +88,12 @@ export class UrlsService {
   }> {
     const skip = (page - 1) * limit;
     const [urls, total] = await Promise.all([
-      this.urlModel.find({ userId: new Types.ObjectId(userId), teamId: new Types.ObjectId(teamId) })
+      this.urlModel.find({ userId: new Types.ObjectId(userId), teamId: Types.ObjectId.createFromHexString(teamId) })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.urlModel.countDocuments({ userId: new Types.ObjectId(userId), teamId: new Types.ObjectId(teamId) }),
+      this.urlModel.countDocuments({ userId: new Types.ObjectId(userId), teamId: Types.ObjectId.createFromHexString(teamId) }),
     ]);
 
     return {
@@ -114,13 +114,13 @@ export class UrlsService {
   }> {
     const skip = (page - 1) * limit;
     const [urls, total] = await Promise.all([
-      this.urlModel.find({ teamId: new Types.ObjectId(teamId) })
+      this.urlModel.find({ teamId: Types.ObjectId.createFromHexString(teamId) })
         .populate('userId', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.urlModel.countDocuments({ teamId: new Types.ObjectId(teamId) }),
+      this.urlModel.countDocuments({ teamId: Types.ObjectId.createFromHexString(teamId) }),
     ]);
 
     return {
@@ -135,7 +135,7 @@ export class UrlsService {
   async findOne(id: string, teamId: string): Promise<UrlResponseDto> {
     const url = await this.urlModel.findOne({ 
       _id: new Types.ObjectId(id), 
-      teamId: new Types.ObjectId(teamId) 
+      teamId: Types.ObjectId.createFromHexString(teamId) 
     }).populate('userId', 'firstName lastName email');
     
     if (!url) {
@@ -147,7 +147,7 @@ export class UrlsService {
   async deactivateUrl(id: string, teamId: string): Promise<void> {
     const url = await this.urlModel.findOne({ 
       _id: new Types.ObjectId(id), 
-      teamId: new Types.ObjectId(teamId) 
+      teamId: Types.ObjectId.createFromHexString(teamId) 
     });
     
     if (!url) {

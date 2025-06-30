@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Team, TeamDocument } from '../teams/schemas/team.schema';
@@ -124,7 +124,7 @@ export class AuthService {
       password: hashedPassword,
       firstName,
       lastName,
-      teamId: adminUser.teamId,
+      teamId: Types.ObjectId.createFromHexString(adminUser.teamId),
       role,
     });
 

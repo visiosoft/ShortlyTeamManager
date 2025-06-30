@@ -22,7 +22,17 @@ export class UsersService {
   }
 
   async findByTeamId(teamId: string): Promise<UserDocument[]> {
-    return this.userModel.find({ teamId: new Types.ObjectId(teamId) }).populate('teamId');
+    console.log('🔍 UsersService.findByTeamId:');
+    console.log('  Input teamId:', teamId);
+    console.log('  Input teamId type:', typeof teamId);
+    
+    const objectId = new Types.ObjectId(teamId);
+    console.log('  Converted to ObjectId:', objectId);
+    
+    const users = await this.userModel.find({ teamId: objectId }).populate('teamId');
+    console.log('  Query result count:', users.length);
+    
+    return users;
   }
 
   async updateLastLogin(userId: string): Promise<void> {

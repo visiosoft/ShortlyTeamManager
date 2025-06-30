@@ -20,7 +20,7 @@ export class AnalyticsService {
     const analytics = new this.clickAnalyticsModel({
       urlId: new Types.ObjectId(urlId),
       userId: new Types.ObjectId(userId),
-      teamId: new Types.ObjectId(teamId),
+      teamId: Types.ObjectId.createFromHexString(teamId),
       ipAddress,
       userAgent,
       referer,
@@ -33,7 +33,7 @@ export class AnalyticsService {
     return this.clickAnalyticsModel
       .find({
         urlId: new Types.ObjectId(urlId),
-        teamId: new Types.ObjectId(teamId),
+        teamId: Types.ObjectId.createFromHexString(teamId),
       })
       .sort({ createdAt: -1 })
       .exec();
@@ -49,14 +49,14 @@ export class AnalyticsService {
     const skip = (page - 1) * limit;
     const [analytics, total] = await Promise.all([
       this.clickAnalyticsModel
-        .find({ teamId: new Types.ObjectId(teamId) })
+        .find({ teamId: Types.ObjectId.createFromHexString(teamId) })
         .populate('urlId', 'originalUrl shortCode')
         .populate('userId', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.clickAnalyticsModel.countDocuments({ teamId: new Types.ObjectId(teamId) }),
+      this.clickAnalyticsModel.countDocuments({ teamId: Types.ObjectId.createFromHexString(teamId) }),
     ]);
 
     return {
@@ -72,7 +72,7 @@ export class AnalyticsService {
     return this.clickAnalyticsModel
       .find({
         userId: new Types.ObjectId(userId),
-        teamId: new Types.ObjectId(teamId),
+        teamId: Types.ObjectId.createFromHexString(teamId),
       })
       .populate('urlId', 'originalUrl shortCode')
       .sort({ createdAt: -1 })
