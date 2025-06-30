@@ -42,8 +42,6 @@ interface UserData {
 interface FormData {
   originalUrl: string
   customShortCode?: string
-  title?: string
-  description?: string
 }
 
 export default function Dashboard() {
@@ -53,12 +51,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'my-urls' | 'team-urls'>('my-urls')
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null)
   const router = useRouter()
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormData>()
 
@@ -118,7 +118,8 @@ export default function Dashboard() {
         }
       )
       setUrls(prev => [response.data, ...prev])
-      reset()
+      setCreatedUrl(response.data.shortUrl)
+      setValue('originalUrl', response.data.shortUrl)
     } catch (error: any) {
       console.error('Error creating URL:', error)
       alert(error.response?.data?.message || 'Error creating short URL')
@@ -192,23 +193,47 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="originalUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                  Long URL
+                  {createdUrl ? 'Shortened URL' : 'Long URL'}
                 </label>
-                <input
-                  {...register('originalUrl', {
-                    required: 'URL is required',
-                    pattern: {
-                      value: /^https?:\/\/.+/,
-                      message: 'Please enter a valid URL starting with http:// or https://',
-                    },
-                  })}
-                  type="url"
-                  id="originalUrl"
-                  placeholder="https://example.com/very-long-url"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <input
+                    {...register('originalUrl', {
+                      required: 'URL is required',
+                      pattern: {
+                        value: /^https?:\/\/.+/,
+                        message: 'Please enter a valid URL starting with http:// or https://',
+                      },
+                    })}
+                    type="url"
+                    id="originalUrl"
+                    placeholder={createdUrl ? "Shortened URL will appear here" : "https://example.com/very-long-url"}
+                    className={`w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      createdUrl ? 'bg-green-50 border-green-300' : ''
+                    }`}
+                    readOnly={!!createdUrl}
+                  />
+                  {createdUrl && (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(createdUrl, 'input')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copied === 'input' ? (
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <Copy className="w-5 h-5" />
+                      )}
+                    </button>
+                  )}
+                </div>
                 {errors.originalUrl && (
                   <p className="mt-1 text-sm text-red-600">{errors.originalUrl.message}</p>
+                )}
+                {createdUrl && (
+                  <p className="mt-1 text-sm text-green-600">✓ URL shortened successfully!</p>
                 )}
               </div>
 
@@ -238,34 +263,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Title (Optional)
-                </label>
-                <input
-                  {...register('title')}
-                  type="text"
-                  id="title"
-                  placeholder="My Awesome Link"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description (Optional)
-                </label>
-                <input
-                  {...register('description')}
-                  type="text"
-                  id="description"
-                  placeholder="Brief description of the link"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -274,6 +271,20 @@ export default function Dashboard() {
               <Plus className="h-4 w-4" />
               <span>{loading ? 'Creating...' : 'Create Short URL'}</span>
             </button>
+            
+            {createdUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatedUrl(null)
+                  reset()
+                }}
+                className="flex items-center space-x-2 bg-gray-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create Another</span>
+              </button>
+            )}
           </form>
         </div>
 
