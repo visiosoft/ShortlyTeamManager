@@ -37,6 +37,11 @@ interface UserData {
     name: string
     description?: string
   }
+  earnings?: {
+    totalEarnings: number
+    currency: string
+    breakdown: Array<{ clicks: number; amount: number; currency: string; }>
+  }
 }
 
 interface FormData {
@@ -74,6 +79,7 @@ export default function Dashboard() {
     setUser(JSON.parse(userData))
     fetchUrls()
     fetchTeamUrls()
+    fetchEarnings()
   }, [router])
 
   const fetchUrls = async () => {
@@ -103,6 +109,21 @@ export default function Dashboard() {
       setTeamUrls(response.data.urls)
     } catch (error) {
       console.error('Error fetching team URLs:', error)
+    }
+  }
+
+  const fetchEarnings = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/teams/my-earnings`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      setUser(prev => prev ? { ...prev, earnings: response.data } : null)
+    } catch (error) {
+      console.error('Error fetching earnings:', error)
     }
   }
 
@@ -164,6 +185,13 @@ export default function Dashboard() {
               <span className="text-sm text-gray-600">
                 Welcome, {user.firstName} {user.lastName}
               </span>
+              {user.earnings && (
+                <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
+                  <span className="text-sm font-medium text-green-800">
+                    Earnings: {user.earnings.totalEarnings} {user.earnings.currency}
+                  </span>
+                </div>
+              )}
               {user.role === 'admin' && (
                 <button
                   onClick={() => router.push('/team-members')}
@@ -302,6 +330,24 @@ export default function Dashboard() {
               >
                 <Users className="h-4 w-4" />
                 <span>Manage Team</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Rewards Management Card for Admins */}
+        {user.role === 'admin' && (
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Rewards System</h2>
+                <p className="text-gray-600">Configure click-based rewards for your team members</p>
+              </div>
+              <button
+                onClick={() => router.push('/rewards')}
+                className="flex items-center space-x-2 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              >
+                <span>Configure Rewards</span>
               </button>
             </div>
           </div>

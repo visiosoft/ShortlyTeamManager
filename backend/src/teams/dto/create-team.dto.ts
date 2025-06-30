@@ -7,4 +7,11 @@ export class CreateTeamDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsOptional()
+  rewards?: Array<{
+    clicks: number;
+    amount: number;
+    currency: string;
+  }>;
 } 

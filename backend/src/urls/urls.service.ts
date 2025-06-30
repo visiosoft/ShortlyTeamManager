@@ -87,13 +87,18 @@ export class UrlsService {
     totalPages: number;
   }> {
     const skip = (page - 1) * limit;
+    const query = { 
+      userId: new Types.ObjectId(userId), 
+      teamId: Types.ObjectId.createFromHexString(teamId) 
+    };
+    
     const [urls, total] = await Promise.all([
-      this.urlModel.find({ userId: new Types.ObjectId(userId), teamId: Types.ObjectId.createFromHexString(teamId) })
+      this.urlModel.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.urlModel.countDocuments({ userId: new Types.ObjectId(userId), teamId: Types.ObjectId.createFromHexString(teamId) }),
+      this.urlModel.countDocuments(query),
     ]);
 
     return {

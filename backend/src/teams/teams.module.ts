@@ -3,10 +3,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TeamsService } from './teams.service';
 import { TeamsController } from './teams.controller';
 import { Team, TeamSchema } from './schemas/team.schema';
+import { UrlsModule } from '../urls/urls.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Team.name, schema: TeamSchema }]),
+    UrlsModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService],

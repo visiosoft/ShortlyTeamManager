@@ -50,6 +50,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        teamId: user.teamId._id,
         team: user.teamId,
       },
     };
@@ -101,6 +102,7 @@ export class AuthService {
         firstName: savedUser.firstName,
         lastName: savedUser.lastName,
         role: savedUser.role,
+        teamId: savedTeam._id,
         team: savedTeam,
       },
     };
