@@ -29,4 +29,20 @@ export class AnalyticsController {
   async getUserAnalytics(@Request() req, @Param('userId') userId: string) {
     return this.analyticsService.getUserAnalytics(userId, req.user.teamId);
   }
+
+  @Get('countries')
+  async getCountryAnalytics(@Request() req) {
+    return this.analyticsService.getCountryAnalytics(req.user.teamId);
+  }
+
+  @Get('countries/detailed')
+  async getDetailedCountryAnalytics(@Request() req) {
+    return this.analyticsService.getDetailedCountryAnalytics(req.user.teamId);
+  }
+
+  @Get('team-members')
+  async getTeamMemberClickStats(@Request() req) {
+    // Optionally, check if user is admin here
+    return this.analyticsService.getTeamMemberClickStats(req.user.teamId);
+  }
 } 

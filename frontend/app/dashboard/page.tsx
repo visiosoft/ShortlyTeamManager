@@ -192,6 +192,13 @@ export default function Dashboard() {
                   </span>
                 </div>
               )}
+              <button
+                onClick={() => router.push('/analytics')}
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+              </button>
               {user.role === 'admin' && (
                 <button
                   onClick={() => router.push('/team-members')}

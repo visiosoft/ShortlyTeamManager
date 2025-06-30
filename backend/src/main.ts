@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  (app as any).set('trust proxy', true);
 
   // Enable CORS
   app.enableCors({
