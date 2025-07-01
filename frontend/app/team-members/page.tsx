@@ -91,7 +91,7 @@ export default function TeamMembers() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/users/team-members`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/team-members`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -123,7 +123,7 @@ export default function TeamMembers() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/auth/team-member`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/team-member`,
         data,
         {
           headers: { Authorization: `Bearer ${token}` }

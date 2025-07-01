@@ -32,7 +32,7 @@ export default function Register() {
     
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/register`,
         data
       )
       

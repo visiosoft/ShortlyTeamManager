@@ -46,7 +46,7 @@ export default function TeamUrlsPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:3009/users/team-members', {
+      const response = await fetch('http://localhost:3009/api/users/team-members', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

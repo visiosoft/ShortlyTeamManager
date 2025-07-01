@@ -132,7 +132,7 @@ export default function Dashboard() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/teams/my-team`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/my-team`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -147,7 +147,7 @@ export default function Dashboard() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/teams/my-earnings`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/my-earnings`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

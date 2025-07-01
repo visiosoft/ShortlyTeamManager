@@ -66,8 +66,8 @@ export default function AnalyticsPage() {
       setLoading(true);
       const token = localStorage.getItem('token');
       const endpoint = user?.role === 'admin' 
-        ? 'http://localhost:3009/analytics/countries/detailed'
-        : 'http://localhost:3009/analytics/user/countries/detailed';
+        ? 'http://localhost:3009/api/analytics/countries/detailed'
+        : 'http://localhost:3009/api/analytics/user/countries/detailed';
       
       const response = await axios.get(endpoint, {
         headers: {
@@ -86,7 +86,7 @@ export default function AnalyticsPage() {
 
   const fetchTeamStats = async (token: string) => {
     try {
-      const response = await axios.get('http://localhost:3009/analytics/team-members', {
+      const response = await axios.get('http://localhost:3009/api/analytics/team-members', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeamStats(response.data);
@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
     setLoadingMember(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3009/analytics/user/${userId}`, {
+      const response = await axios.get(`http://localhost:3009/api/analytics/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMemberAnalytics(response.data);
