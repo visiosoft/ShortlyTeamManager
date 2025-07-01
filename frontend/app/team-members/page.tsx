@@ -122,40 +122,16 @@ export default function TeamMembers() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
-              <div className="text-sm text-gray-600">
-                Team: {user.team.name}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Dashboard
-              </button>
-              <span className="text-sm text-gray-600">
-                Welcome, {user.firstName} {user.lastName}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-8">
+      {/* Page Description */}
+      <div className="mb-8">
+        <p className="text-gray-600">Manage your team members and their roles</p>
+        <div className="text-sm text-gray-600 mt-2">
+          Team: {user.team?.name || 'Loading...'}
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto">
         {/* Team Members Header */}
         <div className="flex justify-between items-center mb-6">
           <div>

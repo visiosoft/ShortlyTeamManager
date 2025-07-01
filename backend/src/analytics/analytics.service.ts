@@ -165,6 +165,61 @@ export class AnalyticsService {
     }));
   }
 
+  async getUserDetailedCountryAnalytics(userId: string, teamId: string): Promise<Array<{
+    country: string;
+    countryCode: string;
+    clicks: number;
+    cities: Array<{ city: string; clicks: number }>;
+    ipAddresses: string[];
+  }>> {
+    const detailedStats = await this.clickAnalyticsModel.aggregate([
+      {
+        $match: {
+          userId: new Types.ObjectId(userId),
+          teamId: Types.ObjectId.createFromHexString(teamId),
+          country: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            country: '$country',
+            city: '$city',
+            ipAddress: '$ipAddress'
+          },
+          clicks: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.country',
+          totalClicks: { $sum: '$clicks' },
+          cities: {
+            $push: {
+              city: '$_id.city',
+              clicks: '$clicks'
+            }
+          },
+          ipAddresses: { $addToSet: '$_id.ipAddress' }
+        }
+      },
+      {
+        $sort: { totalClicks: -1 }
+      }
+    ]);
+
+    return detailedStats.map(stat => ({
+      country: stat._id,
+      countryCode: stat._id,
+      clicks: stat.totalClicks,
+      cities: stat.cities.filter(city => city.city).map(city => ({
+        city: city.city,
+        clicks: city.clicks
+      })),
+      ipAddresses: stat.ipAddresses
+    }));
+  }
+
   async getTeamMemberClickStats(teamId: string) {
     // Aggregate total clicks per user in the team
     const stats = await this.clickAnalyticsModel.aggregate([

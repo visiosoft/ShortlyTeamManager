@@ -40,6 +40,11 @@ export class AnalyticsController {
     return this.analyticsService.getDetailedCountryAnalytics(req.user.teamId);
   }
 
+  @Get('user/countries/detailed')
+  async getUserDetailedCountryAnalytics(@Request() req) {
+    return this.analyticsService.getUserDetailedCountryAnalytics(req.user.userId, req.user.teamId);
+  }
+
   @Get('team-members')
   async getTeamMemberClickStats(@Request() req) {
     // Optionally, check if user is admin here

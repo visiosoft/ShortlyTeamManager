@@ -65,7 +65,11 @@ export default function AnalyticsPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3001/analytics/countries/detailed', {
+      const endpoint = user?.role === 'admin' 
+        ? 'http://localhost:3001/analytics/countries/detailed'
+        : 'http://localhost:3001/analytics/user/countries/detailed';
+      
+      const response = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -132,11 +136,15 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600">Track your URL performance across the globe</p>
+          <p className="text-gray-600">
+            {user?.role === 'admin' 
+              ? 'Track your team\'s URL performance across the globe' 
+              : 'Track your URL performance across the globe'
+            }
+          </p>
         </div>
 
         {/* Admin: Team Member Click Stats */}
@@ -252,7 +260,9 @@ export default function AnalyticsPage() {
                 <MousePointer className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Clicks</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {user?.role === 'admin' ? 'Total Team Clicks' : 'My Total Clicks'}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">{totalClicks.toLocaleString()}</p>
               </div>
             </div>
@@ -264,7 +274,9 @@ export default function AnalyticsPage() {
                 <Globe className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Countries</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {user?.role === 'admin' ? 'Team Countries' : 'My Countries'}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">{uniqueCountries}</p>
               </div>
             </div>
@@ -276,7 +288,9 @@ export default function AnalyticsPage() {
                 <Users className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Unique IPs</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {user?.role === 'admin' ? 'Team Unique IPs' : 'My Unique IPs'}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">{uniqueIPs}</p>
               </div>
             </div>
@@ -287,14 +301,23 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* World Map */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Global Click Distribution</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {user?.role === 'admin' ? 'Team Global Click Distribution' : 'My Global Click Distribution'}
+            </h2>
             <div className="h-96 rounded-lg overflow-hidden">
               {countryData.length === 0 ? (
                 <div className="h-full bg-gray-100 flex items-center justify-center">
                   <div className="text-center">
                     <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No click data available yet</p>
-                    <p className="text-sm text-gray-500 mt-2">Start sharing your URLs to see analytics</p>
+                    <p className="text-gray-600">
+                      {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      {user?.role === 'admin' 
+                        ? 'Team members need to share URLs to see analytics' 
+                        : 'Start sharing your URLs to see analytics'
+                      }
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -375,7 +398,7 @@ export default function AnalyticsPage() {
             <div className="mt-4">
               <div className="text-center mb-3">
                 <p className="text-sm text-gray-600">
-                  {countryData.length} countries with clicks detected
+                  {countryData.length} {user?.role === 'admin' ? 'team countries' : 'countries'} with clicks detected
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Hover over highlighted countries to see click counts
@@ -421,12 +444,21 @@ export default function AnalyticsPage() {
 
           {/* Country List */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Top Countries</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {user?.role === 'admin' ? 'Top Team Countries' : 'My Top Countries'}
+            </h2>
             {countryData.length === 0 ? (
               <div className="text-center py-8">
                 <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No click data available yet</p>
-                <p className="text-sm text-gray-500 mt-2">Start sharing your URLs to see analytics</p>
+                <p className="text-gray-600">
+                  {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {user?.role === 'admin' 
+                    ? 'Team members need to share URLs to see analytics' 
+                    : 'Start sharing your URLs to see analytics'
+                  }
+                </p>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
