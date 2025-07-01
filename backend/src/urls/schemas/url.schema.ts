@@ -31,6 +31,12 @@ export class Url {
 
   @Prop()
   description?: string;
+
+  @Prop({ default: false })
+  isAdminCreated: boolean;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  createdByAdmin?: Types.ObjectId;
 }
 
 export const UrlSchema = SchemaFactory.createForClass(Url); 

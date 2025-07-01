@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { Link, Copy, ExternalLink, BarChart3, Users, LogOut, Plus, MousePointer, TrendingUp } from 'lucide-react'
+import { Link, Copy, ExternalLink, BarChart3, Users, LogOut, Plus, MousePointer, TrendingUp, Shield } from 'lucide-react'
 import axios from 'axios'
 
 interface UrlData {
@@ -17,6 +17,13 @@ interface UrlData {
   description?: string
   userId: string
   user?: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  isAdminCreated: boolean
+  createdByAdmin?: {
     id: string
     firstName: string
     lastName: string
@@ -406,6 +413,14 @@ export default function Dashboard() {
           </form>
         </div>
 
+        {/* Admin URL Creation Form */}
+        {user.role === 'admin' && (
+          <AdminUrlCreationForm onUrlCreated={() => {
+            fetchUrls()
+            fetchTeamUrls()
+          }} />
+        )}
+
         {/* Team Management Card for Admins */}
         {user.role === 'admin' && (
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
@@ -505,12 +520,18 @@ export default function Dashboard() {
 
 function UrlCard({ url, onCopy, copied }: { url: UrlData; onCopy: (text: string, id: string) => void; copied: string | null }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
+    <div className={`rounded-lg p-4 ${url.isAdminCreated ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             <Link className="h-5 w-5 text-blue-600" />
             <span className="font-medium text-gray-900">{url.shortUrl}</span>
+            {url.isAdminCreated && (
+              <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                <Shield className="h-3 w-3" />
+                <span>Admin Created</span>
+              </div>
+            )}
           </div>
           <p className="text-sm text-gray-600 truncate">{url.originalUrl}</p>
           {url.title && <p className="text-sm font-medium text-gray-800 mt-1">{url.title}</p>}
@@ -524,6 +545,12 @@ function UrlCard({ url, onCopy, copied }: { url: UrlData; onCopy: (text: string,
               <div className="flex items-center space-x-1">
                 <Users className="h-4 w-4" />
                 <span>{url.user.firstName} {url.user.lastName}</span>
+              </div>
+            )}
+            {url.createdByAdmin && (
+              <div className="flex items-center space-x-1">
+                <Shield className="h-4 w-4" />
+                <span>By {url.createdByAdmin.firstName} {url.createdByAdmin.lastName}</span>
               </div>
             )}
             <span>Created: {new Date(url.createdAt).toLocaleDateString()}</span>
@@ -552,6 +579,190 @@ function UrlCard({ url, onCopy, copied }: { url: UrlData; onCopy: (text: string,
           </a>
         </div>
       </div>
+    </div>
+  )
+}
+
+function AdminUrlCreationForm({ onUrlCreated }: { onUrlCreated: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; firstName: string; lastName: string; email: string }>>([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    originalUrl: '',
+    customShortCode: '',
+    title: '',
+    description: ''
+  })
+
+  useEffect(() => {
+    fetchTeamMembers()
+  }, [])
+
+  const fetchTeamMembers = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/users/team-members`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      setTeamMembers(response.data)
+    } catch (error) {
+      console.error('Error fetching team members:', error)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedUserId) {
+      alert('Please select a team member')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/urls/admin`,
+        {
+          ...formData,
+          targetUserId: selectedUserId
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+      setCreatedUrl(response.data.shortUrl)
+      onUrlCreated()
+      setFormData({
+        originalUrl: '',
+        customShortCode: '',
+        title: '',
+        description: ''
+      })
+      setSelectedUserId('')
+    } catch (error: any) {
+      console.error('Error creating admin URL:', error)
+      alert(error.response?.data?.message || 'Error creating URL for user')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-blue-50 rounded-lg shadow-sm border border-blue-200 p-6 mb-8">
+      <div className="flex items-center space-x-2 mb-4">
+        <Shield className="h-5 w-5 text-blue-600" />
+        <h2 className="text-lg font-semibold text-gray-900">Create URL for Team Member</h2>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="adminOriginalUrl" className="block text-sm font-medium text-gray-700 mb-2">
+              Long URL
+            </label>
+            <input
+              type="url"
+              id="adminOriginalUrl"
+              value={formData.originalUrl}
+              onChange={(e) => setFormData(prev => ({ ...prev, originalUrl: e.target.value }))}
+              placeholder="https://example.com/very-long-url"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="adminTargetUser" className="block text-sm font-medium text-gray-700 mb-2">
+              Select Team Member
+            </label>
+            <select
+              id="adminTargetUser"
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select a team member...</option>
+              {teamMembers.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.firstName} {member.lastName} ({member.email})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="adminCustomShortCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Custom Short Code (Optional)
+            </label>
+            <input
+              type="text"
+              id="adminCustomShortCode"
+              value={formData.customShortCode}
+              onChange={(e) => setFormData(prev => ({ ...prev, customShortCode: e.target.value }))}
+              placeholder="my-custom-link"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="adminTitle" className="block text-sm font-medium text-gray-700 mb-2">
+              Title (Optional)
+            </label>
+            <input
+              type="text"
+              id="adminTitle"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="URL Title"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="adminDescription" className="block text-sm font-medium text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <input
+              type="text"
+              id="adminDescription"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="URL Description"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center space-x-2 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Shield className="h-4 w-4" />
+            <span>{loading ? 'Creating...' : 'Create URL for User'}</span>
+          </button>
+
+          {createdUrl && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-green-600">✓ URL created successfully!</span>
+              <button
+                type="button"
+                onClick={() => setCreatedUrl(null)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Create Another
+              </button>
+            </div>
+          )}
+        </div>
+      </form>
     </div>
   )
 } 

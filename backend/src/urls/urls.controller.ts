@@ -16,8 +16,11 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { UrlsService } from './urls.service';
 import { CreateUrlDto } from './dto/create-url.dto';
+import { CreateAdminUrlDto } from './dto/create-admin-url.dto';
 import { UrlResponseDto } from './dto/url-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('urls')
 @Controller()
@@ -41,6 +44,27 @@ export class UrlsController {
     @Request() req,
   ): Promise<UrlResponseDto> {
     return this.urlsService.createUrl(createUrlDto, req.user.userId, req.user.teamId);
+  }
+
+  @Post('api/urls/admin')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a URL for a user (Admin only)' })
+  @ApiResponse({
+    status: 201,
+    description: 'URL created successfully for user',
+    type: UrlResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid URL provided' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 409, description: 'Custom short code already taken' })
+  async createAdminUrl(
+    @Body() createAdminUrlDto: CreateAdminUrlDto,
+    @Request() req,
+  ): Promise<UrlResponseDto> {
+    return this.urlsService.createAdminUrl(createAdminUrlDto, req.user.userId, req.user.teamId);
   }
 
   @Get('api/urls/my-urls')
@@ -104,12 +128,13 @@ export class UrlsController {
     status: 200,
     description: 'URL deactivated successfully',
   })
+  @ApiResponse({ status: 403, description: 'Permission denied' })
   @ApiResponse({ status: 404, description: 'URL not found' })
   async deactivateUrl(
     @Param('id') id: string,
     @Request() req,
   ): Promise<void> {
-    return this.urlsService.deactivateUrl(id, req.user.teamId);
+    return this.urlsService.deactivateUrl(id, req.user.teamId, req.user.userId, req.user.role);
   }
 
   @Get(':shortCode')

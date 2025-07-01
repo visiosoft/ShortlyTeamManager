@@ -46,6 +46,12 @@ export class UrlResponseDto {
   user?: UserInfo;
 
   @ApiProperty()
+  isAdminCreated: boolean;
+
+  @ApiProperty({ required: false })
+  createdByAdmin?: UserInfo;
+
+  @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()
