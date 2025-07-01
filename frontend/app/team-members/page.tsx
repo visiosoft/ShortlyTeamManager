@@ -98,7 +98,7 @@ export default function TeamMembers() {
       )
       setTeamMembers(response.data)
       if (response.data.length > 0) {
-        response.data.forEach(member => fetchMemberUrls(member._id))
+        response.data.forEach((member: TeamMember) => fetchMemberUrls(member._id))
       }
     } catch (error) {
       console.error('Error fetching team members:', error)
