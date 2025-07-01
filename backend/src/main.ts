@@ -10,21 +10,12 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS
+  // Enable CORS - Allow all origins
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'https://shortlyapi.mypaperlessoffice.org',
-      'https://mypaperlessoffice.org',
-      process.env.FRONTEND_URL,
-      process.env.NEXT_PUBLIC_FRONTEND_URL,
-    ].filter(Boolean),
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
   });
 
   // Global validation pipe
