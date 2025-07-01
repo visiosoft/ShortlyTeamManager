@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, BarChart3, Users, Link, TrendingUp, DollarSign, FileText, Plus } from 'lucide-react';
+import { LogOut, BarChart3, Users, Link, TrendingUp, DollarSign, FileText, Plus, Shield } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -128,6 +128,19 @@ export default function Sidebar() {
               label="Your Teams" 
               isActive={pathname === '/team-members'}
               disabled={user?.role !== 'admin'}
+            />
+            <NavItem 
+              href="/team-urls" 
+              icon={<Link className="w-4 h-4" />} 
+              label="Create Team URL" 
+              isActive={pathname === '/team-urls'}
+              disabled={user?.role !== 'admin'}
+            />
+            <NavItem 
+              href="/direct-links" 
+              icon={<Shield className="w-4 h-4" />} 
+              label="Direct Links" 
+              isActive={pathname === '/direct-links'}
             />
             <NavItem 
               href="/team-members" 

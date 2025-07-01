@@ -6,7 +6,7 @@ async function testRealIPs() {
 
     // Login as admin
     console.log('1. Logging in as admin...');
-    const loginResponse = await axios.post('http://localhost:3001/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3009/auth/login', {
       email: 'admin@test.com',
       password: 'password123'
     });
@@ -17,7 +17,7 @@ async function testRealIPs() {
     // Create a test URL
     console.log('2. Creating test URL...');
     const shortCode = 'tst' + Math.floor(100000 + Math.random() * 900000); // 9 chars
-    const urlResponse = await axios.post('http://localhost:3001/api/urls', {
+    const urlResponse = await axios.post('http://localhost:3009/api/urls', {
       originalUrl: 'https://www.google.com',
       customShortCode: shortCode
     }, {
@@ -45,7 +45,7 @@ async function testRealIPs() {
       console.log(`   Clicking from IP: ${ip}`);
       
       try {
-        await axios.get(`http://localhost:3001/${shortCode}`, {
+        await axios.get(`http://localhost:3009/${shortCode}`, {
           headers: {
             'X-Forwarded-For': ip,
             'X-Real-IP': ip,
@@ -72,7 +72,7 @@ async function testRealIPs() {
 
     // Check analytics with real IPs
     console.log('5. Checking analytics with real IPs...');
-    const analyticsResponse = await axios.get('http://localhost:3001/analytics/team?limit=20', {
+    const analyticsResponse = await axios.get('http://localhost:3009/analytics/team?limit=20', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -86,7 +86,7 @@ async function testRealIPs() {
 
     // Check country analytics
     console.log('\n6. Checking country analytics...');
-    const countryResponse = await axios.get('http://localhost:3001/analytics/countries', {
+    const countryResponse = await axios.get('http://localhost:3009/analytics/countries', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -101,7 +101,7 @@ async function testRealIPs() {
 
     // Check detailed country analytics
     console.log('\n7. Checking detailed country analytics...');
-    const detailedCountryResponse = await axios.get('http://localhost:3001/analytics/countries/detailed', {
+    const detailedCountryResponse = await axios.get('http://localhost:3009/analytics/countries/detailed', {
       headers: { Authorization: `Bearer ${token}` }
     });
     

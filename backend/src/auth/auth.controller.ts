@@ -5,28 +5,28 @@ import { RegisterDto } from './dto/register.dto';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
-@Controller('auth')
+@Controller()
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
+  @Post('auth/register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
-  @Post('login')
+  @Post('auth/login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('team-member')
+  @Post('auth/team-member')
   async createTeamMember(@Body() createTeamMemberDto: CreateTeamMemberDto, @Request() req) {
     return this.authService.createTeamMember(createTeamMemberDto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('profile')
+  @Get('auth/profile')
   getProfile(@Request() req) {
     return req.user;
   }

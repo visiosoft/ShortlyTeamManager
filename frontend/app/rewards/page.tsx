@@ -102,7 +102,7 @@ export default function RewardsPage() {
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/teams/my-team`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/teams/my-team`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -150,7 +150,7 @@ export default function RewardsPage() {
     try {
       const token = localStorage.getItem('token')
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/teams/${user.team.id}/rewards`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/teams/${user.team.id}/rewards`,
         data,
         {
           headers: { Authorization: `Bearer ${token}` }

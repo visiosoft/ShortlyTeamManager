@@ -6,7 +6,7 @@ async function testAnalytics() {
 
     // Login as admin
     console.log('1. Logging in as admin...');
-    const loginResponse = await axios.post('http://localhost:3001/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3009/auth/login', {
       email: 'admin@test.com',
       password: 'password123'
     });
@@ -16,7 +16,7 @@ async function testAnalytics() {
 
     // Create a URL
     console.log('2. Creating a test URL...');
-    const urlResponse = await axios.post('http://localhost:3001/api/urls', {
+    const urlResponse = await axios.post('http://localhost:3009/api/urls', {
       originalUrl: 'https://www.google.com',
       customShortCode: 'test123'
     }, {
@@ -43,7 +43,7 @@ async function testAnalytics() {
       
       // Simulate a click by making a request to the short URL
       try {
-        await axios.get(`http://localhost:3001/${shortCode}`, {
+        await axios.get(`http://localhost:3009/${shortCode}`, {
           headers: {
             'X-Forwarded-For': ip,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -69,7 +69,7 @@ async function testAnalytics() {
 
     // Get country analytics
     console.log('5. Fetching country analytics...');
-    const analyticsResponse = await axios.get('http://localhost:3001/analytics/countries/detailed', {
+    const analyticsResponse = await axios.get('http://localhost:3009/analytics/countries/detailed', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -109,7 +109,7 @@ async function testAnalytics() {
 
     // Get basic country stats
     console.log('\n6. Fetching basic country stats...');
-    const basicStatsResponse = await axios.get('http://localhost:3001/analytics/countries', {
+    const basicStatsResponse = await axios.get('http://localhost:3009/analytics/countries', {
       headers: { Authorization: `Bearer ${token}` }
     });
     

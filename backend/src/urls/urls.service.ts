@@ -227,23 +227,59 @@ export class UrlsService {
     return url.userId.toString() === userId && !url.isAdminCreated;
   }
 
+  async regenerateShortUrl(id: string, teamId: string): Promise<UrlResponseDto> {
+    const url = await this.urlModel.findOne({ 
+      _id: new Types.ObjectId(id), 
+      teamId: Types.ObjectId.createFromHexString(teamId) 
+    });
+    
+    if (!url) {
+      throw new NotFoundException('URL not found');
+    }
+
+    // Generate new short code
+    let newShortCode;
+    do {
+      newShortCode = nanoid(6);
+    } while (await this.urlModel.findOne({ shortCode: newShortCode }));
+
+    // Update the URL with new short code
+    url.shortCode = newShortCode;
+    const updatedUrl = await url.save();
+    
+    return this.mapToResponseDto(updatedUrl);
+  }
+
   private mapToResponseDto(url: UrlDocument): UrlResponseDto {
-    return {
-      id: url._id.toString(),
-      originalUrl: url.originalUrl,
-      shortCode: url.shortCode,
-      shortUrl: `${process.env.BASE_URL || 'http://localhost:3001'}/${url.shortCode}`,
-      clicks: url.clicks,
-      isActive: url.isActive,
-      title: url.title,
-      description: url.description,
-      userId: url.userId ? url.userId.toString() : '',
-      user: (url as any).userId && typeof (url as any).userId === 'object' ? {
+    // Handle userId - it could be an ObjectId or a populated user object
+    let userId: string;
+    let user: any = undefined;
+    
+    if ((url as any).userId && typeof (url as any).userId === 'object' && (url as any).userId._id) {
+      // userId is populated (user object)
+      userId = (url as any).userId._id.toString();
+      user = {
         id: (url as any).userId._id.toString(),
         firstName: (url as any).userId.firstName,
         lastName: (url as any).userId.lastName,
         email: (url as any).userId.email,
-      } : undefined,
+      };
+    } else {
+      // userId is just an ObjectId
+      userId = url.userId ? url.userId.toString() : '';
+    }
+
+    return {
+      id: url._id.toString(),
+      originalUrl: url.originalUrl,
+      shortCode: url.shortCode,
+      shortUrl: `${process.env.BASE_URL || 'http://localhost:3009'}/${url.shortCode}`,
+      clicks: url.clicks,
+      isActive: url.isActive,
+      title: url.title,
+      description: url.description,
+      userId: userId,
+      user: user,
       isAdminCreated: url.isAdminCreated,
       createdByAdmin: (url as any).createdByAdmin && typeof (url as any).createdByAdmin === 'object' ? {
         id: (url as any).createdByAdmin._id.toString(),

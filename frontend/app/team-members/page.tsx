@@ -20,7 +20,7 @@ interface UserData {
 }
 
 interface TeamMember {
-  id: string
+  _id: string
   email: string
   firstName: string
   lastName: string
@@ -37,11 +37,26 @@ interface CreateTeamMemberData {
   role: 'admin' | 'user'
 }
 
+interface UrlData {
+  id: string
+  originalUrl: string
+  shortCode: string
+  shortUrl: string
+  title?: string
+  description?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export default function TeamMembers() {
   const [user, setUser] = useState<UserData | null>(null)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [memberUrls, setMemberUrls] = useState<Record<string, UrlData[]>>({})
+  const [editingUrlId, setEditingUrlId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Partial<UrlData>>({})
   const router = useRouter()
 
   const {
@@ -76,14 +91,30 @@ export default function TeamMembers() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/users/team-members`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/users/team-members`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       )
       setTeamMembers(response.data)
+      if (response.data.length > 0) {
+        response.data.forEach(member => fetchMemberUrls(member._id))
+      }
     } catch (error) {
       console.error('Error fetching team members:', error)
+    }
+  }
+
+  const fetchMemberUrls = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/user/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setMemberUrls(prev => ({ ...prev, [userId]: response.data.urls || [] }))
+    } catch (error) {
+      setMemberUrls(prev => ({ ...prev, [userId]: [] }))
     }
   }
 
@@ -92,7 +123,7 @@ export default function TeamMembers() {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/team-member`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/auth/team-member`,
         data,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -115,6 +146,31 @@ export default function TeamMembers() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     router.push('/login')
+  }
+
+  const handleEditClick = (url: UrlData) => {
+    setEditingUrlId(url.id)
+    setEditForm({ ...url })
+  }
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setEditForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleEditSave = async (userId: string, urlId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/${urlId}`,
+        editForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setEditingUrlId(null)
+      fetchMemberUrls(userId)
+    } catch (error) {
+      alert('Failed to update URL')
+    }
   }
 
   if (!user) {
@@ -283,8 +339,8 @@ export default function TeamMembers() {
                 <p className="text-gray-500">No team members found. Add your first team member above.</p>
               </div>
             ) : (
-              teamMembers.map((member) => (
-                <div key={member.id} className="px-6 py-4 flex items-center justify-between">
+              teamMembers.map((member: TeamMember) => (
+                <div key={member._id} className="px-6 py-4 flex flex-col border-b">
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -314,14 +370,55 @@ export default function TeamMembers() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      member.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {member.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                  <div className="mt-2 ml-12">
+                    <h5 className="text-xs text-gray-500 mb-1">Assigned URLs:</h5>
+                    {memberUrls[member._id] && memberUrls[member._id].length > 0 ? (
+                      <ul className="space-y-2">
+                        {memberUrls[member._id].map(url => (
+                          <li key={url.id} className="bg-gray-50 rounded p-2 flex items-center justify-between">
+                            {editingUrlId === url.id ? (
+                              <div className="flex flex-col w-full">
+                                <input
+                                  name="originalUrl"
+                                  value={editForm.originalUrl || ''}
+                                  onChange={handleEditChange}
+                                  className="mb-1 px-2 py-1 border rounded"
+                                />
+                                <input
+                                  name="title"
+                                  value={editForm.title || ''}
+                                  onChange={handleEditChange}
+                                  className="mb-1 px-2 py-1 border rounded"
+                                  placeholder="Title"
+                                />
+                                <textarea
+                                  name="description"
+                                  value={editForm.description || ''}
+                                  onChange={handleEditChange}
+                                  className="mb-1 px-2 py-1 border rounded"
+                                  placeholder="Description"
+                                />
+                                <div className="flex space-x-2">
+                                  <button onClick={() => handleEditSave(member._id, url.id)} className="bg-blue-600 text-white px-2 py-1 rounded">Save</button>
+                                  <button onClick={() => setEditingUrlId(null)} className="bg-gray-300 px-2 py-1 rounded">Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex-1">
+                                <span className="font-mono text-xs text-blue-700">{url.shortUrl}</span>
+                                <span className="ml-2 text-xs text-gray-700">{url.title}</span>
+                                <span className="ml-2 text-xs text-gray-500">{url.description}</span>
+                              </div>
+                            )}
+                            {editingUrlId !== url.id && (
+                              <button onClick={() => handleEditClick(url)} className="ml-2 text-blue-600 hover:underline text-xs">Edit</button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="text-xs text-gray-400">No URLs assigned.</span>
+                    )}
                   </div>
                 </div>
               ))

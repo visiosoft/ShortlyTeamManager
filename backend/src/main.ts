@@ -7,6 +7,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   (app as any).set('trust proxy', true);
 
+  // Set global prefix
+  app.setGlobalPrefix('api');
+
   // Enable CORS
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',

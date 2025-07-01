@@ -6,7 +6,7 @@ async function debugCountryAnalytics() {
 
     // Login as admin
     console.log('1. Logging in as admin...');
-    const loginResponse = await axios.post('http://localhost:3001/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3009/auth/login', {
       email: 'admin@test.com',
       password: 'password123'
     });
@@ -16,7 +16,7 @@ async function debugCountryAnalytics() {
 
     // Get raw analytics data to see what's stored
     console.log('2. Getting raw analytics data...');
-    const teamAnalyticsResponse = await axios.get('http://localhost:3001/analytics/team?limit=10', {
+    const teamAnalyticsResponse = await axios.get('http://localhost:3009/analytics/team?limit=10', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -62,7 +62,7 @@ async function debugCountryAnalytics() {
     // Check the country analytics query
     console.log('\n5. Testing country analytics endpoint...');
     try {
-      const countryResponse = await axios.get('http://localhost:3001/analytics/countries', {
+      const countryResponse = await axios.get('http://localhost:3009/analytics/countries', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Country analytics response:', countryResponse.data);

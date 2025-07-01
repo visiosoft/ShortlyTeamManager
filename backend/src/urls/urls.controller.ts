@@ -27,7 +27,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class UrlsController {
   constructor(private readonly urlsService: UrlsService) {}
 
-  @Post('api/urls')
+  @Post('urls')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -46,7 +46,7 @@ export class UrlsController {
     return this.urlsService.createUrl(createUrlDto, req.user.userId, req.user.teamId);
   }
 
-  @Post('api/urls/admin')
+  @Post('urls/admin')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
@@ -67,7 +67,7 @@ export class UrlsController {
     return this.urlsService.createAdminUrl(createAdminUrlDto, req.user.userId, req.user.teamId);
   }
 
-  @Get('api/urls/my-urls')
+  @Get('urls/my-urls')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user URLs with pagination' })
@@ -85,7 +85,7 @@ export class UrlsController {
     return this.urlsService.findAllByUser(req.user.userId, req.user.teamId, page, limit);
   }
 
-  @Get('api/urls/team-urls')
+  @Get('urls/team-urls')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all team URLs with pagination (Admin only)' })
@@ -103,7 +103,7 @@ export class UrlsController {
     return this.urlsService.findAllByTeam(req.user.teamId, page, limit);
   }
 
-  @Get('api/urls/:id')
+  @Get('urls/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get URL by ID' })
@@ -120,7 +120,7 @@ export class UrlsController {
     return this.urlsService.findOne(id, req.user.teamId);
   }
 
-  @Delete('api/urls/:id')
+  @Delete('urls/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Deactivate URL by ID' })
@@ -155,5 +155,42 @@ export class UrlsController {
     
     await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
     res.redirect(url.originalUrl);
+  }
+
+  @Get('urls/user/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all URLs for a specific user (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User URLs retrieved successfully',
+  })
+  async findUserUrls(
+    @Param('userId') userId: string,
+    @Request() req,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 100,
+  ) {
+    return this.urlsService.findAllByUser(userId, req.user.teamId, page, limit);
+  }
+
+  @Post('urls/:id/regenerate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Regenerate short URL code (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Short URL regenerated successfully',
+    type: UrlResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'URL not found' })
+  async regenerateShortUrl(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<UrlResponseDto> {
+    return this.urlsService.regenerateShortUrl(id, req.user.teamId);
   }
 } 

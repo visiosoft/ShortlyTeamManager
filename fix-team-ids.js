@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { MongoClient, ObjectId } = require('mongodb');
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'http://localhost:3009';
 const MONGODB_URI = 'mongodb://localhost:27017/url-shortener';
 
 async function fixTeamIds() {

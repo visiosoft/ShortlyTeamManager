@@ -6,7 +6,7 @@ async function debugAnalytics() {
 
     // Login as admin
     console.log('1. Logging in as admin...');
-    const loginResponse = await axios.post('http://localhost:3001/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3009/auth/login', {
       email: 'admin@test.com',
       password: 'password123'
     });
@@ -16,7 +16,7 @@ async function debugAnalytics() {
 
     // Check team info
     console.log('2. Getting team info...');
-    const teamResponse = await axios.get('http://localhost:3001/teams/my-team', {
+    const teamResponse = await axios.get('http://localhost:3009/teams/my-team', {
       headers: { Authorization: `Bearer ${token}` }
     });
     console.log('Team ID:', teamResponse.data.id);
@@ -24,7 +24,7 @@ async function debugAnalytics() {
 
     // Check URLs
     console.log('\n3. Checking URLs...');
-    const urlsResponse = await axios.get('http://localhost:3001/api/urls/my-urls', {
+    const urlsResponse = await axios.get('http://localhost:3009/api/urls/my-urls', {
       headers: { Authorization: `Bearer ${token}` }
     });
     console.log('Total URLs:', urlsResponse.data.total);
@@ -35,7 +35,7 @@ async function debugAnalytics() {
 
     // Check team URLs
     console.log('\n4. Checking team URLs...');
-    const teamUrlsResponse = await axios.get('http://localhost:3001/api/urls/team-urls', {
+    const teamUrlsResponse = await axios.get('http://localhost:3009/api/urls/team-urls', {
       headers: { Authorization: `Bearer ${token}` }
     });
     console.log('Total team URLs:', teamUrlsResponse.data.total);
@@ -49,7 +49,7 @@ async function debugAnalytics() {
     
     // Team analytics
     try {
-      const teamAnalyticsResponse = await axios.get('http://localhost:3001/analytics/team', {
+      const teamAnalyticsResponse = await axios.get('http://localhost:3009/analytics/team', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Team analytics total:', teamAnalyticsResponse.data.total);
@@ -60,7 +60,7 @@ async function debugAnalytics() {
 
     // Country analytics
     try {
-      const countryAnalyticsResponse = await axios.get('http://localhost:3001/analytics/countries', {
+      const countryAnalyticsResponse = await axios.get('http://localhost:3009/analytics/countries', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Country analytics:', countryAnalyticsResponse.data.length, 'countries');
@@ -73,7 +73,7 @@ async function debugAnalytics() {
 
     // Team member stats
     try {
-      const teamMembersResponse = await axios.get('http://localhost:3001/analytics/team-members', {
+      const teamMembersResponse = await axios.get('http://localhost:3009/analytics/team-members', {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Team member stats:', teamMembersResponse.data.length, 'members');

@@ -69,13 +69,13 @@ npm run migration:run
 npm run dev
 ```
 
-This will start both the frontend (http://localhost:3000) and backend (http://localhost:3001) servers.
+This will start both the frontend (http://localhost:3000) and backend (http://localhost:3009) servers.
 
 ### Development
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- API Documentation: http://localhost:3001/api
+- Backend API: http://localhost:3009
+- API Documentation: http://localhost:3009/api
 
 ### Available Scripts
 
@@ -101,7 +101,7 @@ PORT=3001
 
 ### Frontend (.env.local)
 ```
-NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3009
 ```
 
 ## License
