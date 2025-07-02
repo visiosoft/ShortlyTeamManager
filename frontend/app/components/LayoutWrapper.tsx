@@ -22,18 +22,47 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   
-  // Check if current page is login, register, home page, or a short URL redirect
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
-  const isShortUrlRedirect = pathname.length > 1 && !pathname.startsWith('/') && !pathname.includes('/');
+  // Define pages that should NOT have the sidebar (public pages)
+  const publicPages = ['/login', '/register', '/', '/not-found'];
+  const isPublicPage = publicPages.includes(pathname || '');
+  
+  // Define pages that SHOULD have the sidebar (authenticated pages)
+  const authenticatedPages = ['/dashboard', '/analytics', '/team-members', '/rewards', '/direct-links', '/team-urls'];
+  const isAuthenticatedPage = authenticatedPages.includes(pathname || '');
+  
+  // Check if this is a short URL redirect (pathname like /YbZ8wA, /abc123, etc.)
+  // Short URLs are typically 3-20 characters, alphanumeric with hyphens/underscores
+  const isShortUrlRedirect = pathname && 
+    pathname.length > 1 && 
+    pathname.length <= 21 && // / + up to 20 characters
+    pathname.startsWith('/') && 
+    pathname !== '/' && 
+    !authenticatedPages.includes(pathname) &&
+    !publicPages.includes(pathname) &&
+    !pathname.startsWith('/api') &&
+    !pathname.startsWith('/not-found') &&
+    /^\/[a-zA-Z0-9_-]+$/.test(pathname);
+  
+  // Debug logging to see what's happening with short URL detection
+  console.log('=== LayoutWrapper Debug ===');
+  console.log('pathname:', pathname);
+  console.log('pathname length:', pathname?.length);
+  console.log('startsWith /:', pathname?.startsWith('/'));
+  console.log('includes /:', pathname?.includes('/'));
+  console.log('regex test:', pathname ? /^\/[a-zA-Z0-9_-]+$/.test(pathname) : 'N/A');
+  console.log('isShortUrlRedirect:', isShortUrlRedirect);
+  console.log('isPublicPage:', isPublicPage);
+  console.log('isAuthenticatedPage:', isAuthenticatedPage);
+  console.log('========================');
   
   useEffect(() => {
-    if (!isAuthPage) {
+    if (!isPublicPage && !isShortUrlRedirect) {
       const userData = localStorage.getItem('user');
       if (userData) {
         setUser(JSON.parse(userData));
       }
     }
-  }, [isAuthPage]);
+  }, [isPublicPage, isShortUrlRedirect]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -42,14 +71,14 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   };
   
   return (
-    <div className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex'} h-screen bg-gray-50`}>
+    <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex'} h-screen bg-gray-50`}>
       {/* Left Sidebar - Only show on authenticated pages */}
-      {!isAuthPage && !isShortUrlRedirect && <Sidebar />}
+      {!isPublicPage && !isShortUrlRedirect && <Sidebar />}
       
       {/* Main Content */}
-      <div className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex-1 flex flex-col overflow-hidden'}`}>
+      <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 flex flex-col overflow-hidden'}`}>
         {/* Header with Logout Button - Only show on authenticated pages */}
-        {!isAuthPage && !isShortUrlRedirect && (
+        {!isPublicPage && !isShortUrlRedirect && (
           <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -85,7 +114,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           </header>
         )}
         
-        <main className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex-1 overflow-y-auto'}`}>
+        <main className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 overflow-y-auto'}`}>
           {children}
         </main>
       </div>
