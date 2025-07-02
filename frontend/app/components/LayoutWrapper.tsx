@@ -22,8 +22,9 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   
-  // Check if current page is login, register, or home page
+  // Check if current page is login, register, home page, or a short URL redirect
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
+  const isShortUrlRedirect = pathname.length > 1 && !pathname.startsWith('/') && !pathname.includes('/');
   
   useEffect(() => {
     if (!isAuthPage) {
@@ -41,14 +42,14 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   };
   
   return (
-    <div className={`${isAuthPage ? '' : 'flex'} h-screen bg-gray-50`}>
+    <div className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex'} h-screen bg-gray-50`}>
       {/* Left Sidebar - Only show on authenticated pages */}
-      {!isAuthPage && <Sidebar />}
+      {!isAuthPage && !isShortUrlRedirect && <Sidebar />}
       
       {/* Main Content */}
-      <div className={`${isAuthPage ? '' : 'flex-1 flex flex-col overflow-hidden'}`}>
+      <div className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex-1 flex flex-col overflow-hidden'}`}>
         {/* Header with Logout Button - Only show on authenticated pages */}
-        {!isAuthPage && (
+        {!isAuthPage && !isShortUrlRedirect && (
           <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -84,7 +85,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           </header>
         )}
         
-        <main className={`${isAuthPage ? '' : 'flex-1 overflow-y-auto'}`}>
+        <main className={`${isAuthPage || isShortUrlRedirect ? '' : 'flex-1 overflow-y-auto'}`}>
           {children}
         </main>
       </div>

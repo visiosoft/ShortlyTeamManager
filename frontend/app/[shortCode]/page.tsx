@@ -1,35 +1,7 @@
-import { redirect } from 'next/navigation'
-import mongoose from 'mongoose'
+'use client'
 
-// Connect to the production database
-const connectDB = async () => {
-  if (mongoose.connections[0].readyState) return
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/url-shortener')
-    console.log('MongoDB connected')
-  } catch (error) {
-    console.error('MongoDB connection error:', error)
-  }
-}
-
-// URL Schema
-const urlSchema = new mongoose.Schema({
-  originalUrl: String,
-  shortCode: String,
-  userId: mongoose.Schema.Types.ObjectId,
-  teamId: mongoose.Schema.Types.ObjectId,
-  clicks: { type: Number, default: 0 },
-  isActive: { type: Boolean, default: true },
-  title: String,
-  description: String,
-  isAdminCreated: { type: Boolean, default: false },
-  createdByAdmin: mongoose.Schema.Types.ObjectId,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-})
-
-const Url = mongoose.models.Url || mongoose.model('Url', urlSchema)
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface PageProps {
   params: {
@@ -37,31 +9,65 @@ interface PageProps {
   }
 }
 
-export default async function ShortUrlRedirect({ params }: PageProps) {
-  const { shortCode } = params
+export default function ShortUrlRedirect({ params }: PageProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const [isLoading, setIsLoading] = useState(true)
 
-  try {
-    await connectDB()
-    
-    // Find the URL by short code
-    const url = await Url.findOne({ shortCode, isActive: true })
-    
-    if (!url) {
-      // URL not found, redirect to 404
-      redirect('/not-found')
+  // Get shortCode from params or extract from pathname as fallback
+  const shortCode = params?.shortCode || (pathname && pathname.startsWith('/') ? pathname.slice(1) : pathname)
+
+  useEffect(() => {
+    debugger;
+    const redirectToOriginalUrl = async () => {
+      try {
+        console.log('🔗 Processing short code:', shortCode)
+        console.log('🔗 Params:', params)
+        console.log('🔗 Pathname:', pathname)
+        
+        if (!shortCode || shortCode === '') {
+          console.log('❌ No short code found')
+          router.push('/not-found')
+          return
+        }
+        debugger;
+        // Call the backend API to get the original URL
+        const apiUrl = `http://localhost:3009/api/urls/info/${shortCode}`
+        console.log('🌐 Calling API:', apiUrl)
+        
+        const response = await fetch(apiUrl)
+        
+        console.log('📡 Response status:', response.status)
+        console.log('📡 Response ok:', response.ok)
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📄 Response data:', data)
+          console.log('✅ Redirecting to:', data.originalUrl)
+          window.location.href = data.originalUrl
+        } else {
+          const errorText = await response.text()
+          console.log('❌ Error response:', errorText)
+          console.log('❌ URL not found')
+          router.push('/not-found')
+        }
+      } catch (error) {
+        console.error('❌ Error:', error)
+        router.push('/not-found')
+      }
     }
 
-    // Increment clicks
-    await Url.updateOne(
-      { shortCode },
-      { $inc: { clicks: 1 } }
-    )
+    redirectToOriginalUrl()
+  }, [shortCode, router, params, pathname])
 
-    // Redirect to the original URL
-    redirect(url.originalUrl)
-    
-  } catch (error) {
-    console.error('Error during redirect:', error)
-    redirect('/not-found')
-  }
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting...</p>
+        <p className="text-sm text-gray-400 mt-2">Short code: {shortCode || 'Loading...'}</p>
+      </div>
+    </div>
+  )
 } 

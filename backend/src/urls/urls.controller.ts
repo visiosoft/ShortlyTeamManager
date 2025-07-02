@@ -157,6 +157,33 @@ export class UrlsController {
     res.redirect(url.originalUrl);
   }
 
+  @Get('urls/info/:shortCode')
+  @ApiOperation({ summary: 'Get URL info by short code (JSON response)' })
+  @ApiResponse({ status: 200, description: 'URL info retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'URL not found' })
+  async getUrlInfo(
+    @Param('shortCode') shortCode: string,
+    @Request() req,
+  ) {
+    const url = await this.urlsService.findByShortCode(shortCode);
+    
+    // Get IP address and user agent
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    const referer = req.get('Referer');
+    
+    await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
+    
+    return {
+      shortCode: url.shortCode,
+      originalUrl: url.originalUrl,
+      title: url.title,
+      description: url.description,
+      clicks: url.clicks,
+      createdAt: url.createdAt
+    };
+  }
+
   @Get('urls/user/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
