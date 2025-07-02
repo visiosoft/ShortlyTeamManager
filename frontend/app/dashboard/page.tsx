@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { Link, Copy, ExternalLink, BarChart3, Users, LogOut, Plus, MousePointer, TrendingUp, Shield } from 'lucide-react'
-import axios from 'axios'
+import apiClient from '@/lib/axios'
+import { api } from '@/lib/api'
 
 interface UrlData {
   id: string
@@ -100,13 +101,7 @@ export default function Dashboard() {
 
   const fetchUrls = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/my-urls`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.urls.myUrls)
       setUrls(response.data.urls)
     } catch (error) {
       console.error('Error fetching URLs:', error)
@@ -115,13 +110,7 @@ export default function Dashboard() {
 
   const fetchTeamUrls = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/team-urls`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.urls.teamUrls)
       setTeamUrls(response.data.urls)
     } catch (error) {
       console.error('Error fetching team URLs:', error)
@@ -130,13 +119,7 @@ export default function Dashboard() {
 
   const fetchTeamData = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/my-team`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.teams.myTeam)
       setUser(prev => prev ? { ...prev, team: response.data } : null)
     } catch (error) {
       console.error('Error fetching team data:', error)
@@ -145,13 +128,7 @@ export default function Dashboard() {
 
   const fetchEarnings = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/my-earnings`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.teams.earnings)
       setUser(prev => prev ? { ...prev, earnings: response.data } : null)
     } catch (error) {
       console.error('Error fetching earnings:', error)
@@ -161,14 +138,7 @@ export default function Dashboard() {
   const onSubmit = async (data: FormData) => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.post(api.urls.create, data)
       setUrls(prev => [response.data, ...prev])
       setCreatedUrl(response.data.shortUrl)
       setValue('originalUrl', response.data.shortUrl)

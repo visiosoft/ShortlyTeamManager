@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { Plus, Users, LogOut, Trash2, UserPlus } from 'lucide-react'
-import axios from 'axios'
+import apiClient from '@/lib/axios'
+import { api } from '@/lib/api'
 
 interface UserData {
   id: string
@@ -91,13 +92,7 @@ export default function TeamMembers() {
 
   const fetchTeamMembers = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/team-members`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.users.teamMembers)
       setTeamMembers(response.data)
       if (response.data.length > 0) {
         response.data.forEach((member: TeamMember) => fetchMemberUrls(member._id))
@@ -109,11 +104,7 @@ export default function TeamMembers() {
 
   const fetchMemberUrls = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/user/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const response = await apiClient.get(api.urls.userUrls(userId))
       setMemberUrls(prev => ({ ...prev, [userId]: response.data.urls || [] }))
     } catch (error) {
       setMemberUrls(prev => ({ ...prev, [userId]: [] }))
@@ -123,14 +114,7 @@ export default function TeamMembers() {
   const onSubmit = async (data: CreateTeamMemberData) => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/team-member`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.post(api.auth.teamMember, data)
       
       // Add new member to the list
       setTeamMembers(prev => [...prev, response.data])
@@ -162,12 +146,7 @@ export default function TeamMembers() {
 
   const handleEditSave = async (userId: string, urlId: string) => {
     try {
-      const token = localStorage.getItem('token')
-      await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/urls/${urlId}`,
-        editForm,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      await apiClient.patch(api.urls.getById(urlId), editForm)
       setEditingUrlId(null)
       fetchMemberUrls(userId)
     } catch (error) {

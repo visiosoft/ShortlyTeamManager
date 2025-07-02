@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiCall, api } from '@/lib/api';
 
 interface User {
   _id: string;
@@ -46,11 +47,7 @@ export default function TeamUrlsPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:3009/api/users/team-members', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiCall(api.users.teamMembers);
 
       if (response.ok) {
         const data = await response.json();
@@ -77,12 +74,8 @@ export default function TeamUrlsPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:3009/api/urls/admin', {
+      const response = await apiCall(api.urls.createAdmin, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(formData),
       });
 

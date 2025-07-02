@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link, Copy, RefreshCw, ExternalLink, Shield } from 'lucide-react';
+import { apiCall, api } from '@/lib/api';
 
 interface UrlData {
   id: string;
@@ -71,9 +72,7 @@ export default function DirectLinksPage() {
   const fetchDirectLinks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3009/api/urls/team-urls', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiCall(api.urls.teamUrls);
 
       if (response.ok) {
         const data = await response.json();
@@ -113,12 +112,8 @@ export default function DirectLinksPage() {
     setRegenerating(urlId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3009/api/urls/${urlId}/regenerate`, {
+      const response = await apiCall(api.urls.regenerate(urlId), {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (response.ok) {

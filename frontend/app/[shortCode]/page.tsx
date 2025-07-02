@@ -1,35 +1,7 @@
-import { redirect } from 'next/navigation'
-import mongoose from 'mongoose'
+'use client'
 
-// Connect to the production database
-const connectDB = async () => {
-  if (mongoose.connections[0].readyState) return
-  
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/url-shortener')
-    console.log('MongoDB connected')
-  } catch (error) {
-    console.error('MongoDB connection error:', error)
-  }
-}
-
-// URL Schema
-const urlSchema = new mongoose.Schema({
-  originalUrl: String,
-  shortCode: String,
-  userId: mongoose.Schema.Types.ObjectId,
-  teamId: mongoose.Schema.Types.ObjectId,
-  clicks: { type: Number, default: 0 },
-  isActive: { type: Boolean, default: true },
-  title: String,
-  description: String,
-  isAdminCreated: { type: Boolean, default: false },
-  createdByAdmin: mongoose.Schema.Types.ObjectId,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-})
-
-const Url = mongoose.models.Url || mongoose.model('Url', urlSchema)
+import { useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface PageProps {
   params: {
@@ -37,31 +9,47 @@ interface PageProps {
   }
 }
 
-export default async function ShortUrlRedirect({ params }: PageProps) {
-  const { shortCode } = params
+export default function ShortUrlRedirect({ params }: PageProps) {
+  const router = useRouter()
+  const pathname = usePathname()
 
-  try {
-    await connectDB()
-    
-    // Find the URL by short code
-    const url = await Url.findOne({ shortCode, isActive: true })
-    
-    if (!url) {
-      // URL not found, redirect to 404
-      redirect('/not-found')
+  // Get shortCode from params or extract from pathname as fallback
+  const shortCode = params?.shortCode || (pathname && pathname.startsWith('/') ? pathname.slice(1) : pathname)
+
+  useEffect(() => {
+    const redirectToOriginalUrl = async () => {
+      // Quick validation - no API calls for invalid shortCodess
+      if (!shortCode || shortCode === '' || shortCode.length < 3 || shortCode.length > 20) {
+        router.push('/not-found')
+        return
+      }
+
+      // Validate shortCode format (alphanumeric, hyphens, underscores only)
+      if (!/^[a-zA-Z0-9_-]+$/.test(shortCode)) {
+        router.push('/not-found')
+        return
+      }
+
+      try {
+        // Use environment variable with fallback to localhost
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'
+        const response = await fetch(`${apiUrl}/api/urls/info/${shortCode}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Immediate redirect - no loading, no UI
+          window.location.href = data.originalUrl
+        } else {
+          router.push('/not-found')
+        }
+      } catch (error) {
+        router.push('/not-found')
+      }
     }
 
-    // Increment clicks
-    await Url.updateOne(
-      { shortCode },
-      { $inc: { clicks: 1 } }
-    )
+    redirectToOriginalUrl()
+  }, [shortCode, router, params, pathname])
 
-    // Redirect to the original URL
-    redirect(url.originalUrl)
-    
-  } catch (error) {
-    console.error('Error during redirect:', error)
-    redirect('/not-found')
-  }
+  // Return null - no UI at all
+  return null
 } 
