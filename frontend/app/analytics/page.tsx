@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import apiClient from '@/lib/axios';
+import { api } from '@/lib/api';
 import { Globe, MapPin, Users, MousePointer, BarChart3 } from 'lucide-react';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 
@@ -66,14 +67,10 @@ export default function AnalyticsPage() {
       setLoading(true);
       const token = localStorage.getItem('token');
       const endpoint = user?.role === 'admin' 
-        ? 'http://localhost:3009/api/analytics/countries/detailed'
-        : 'http://localhost:3009/api/analytics/user/countries/detailed';
+        ? api.analytics.countriesDetailed
+        : api.analytics.userCountriesDetailed;
       
-      const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(endpoint);
       console.log('Analytics data received:', response.data); // Debug log
       setCountryData(response.data);
     } catch (err) {
@@ -86,9 +83,7 @@ export default function AnalyticsPage() {
 
   const fetchTeamStats = async (token: string) => {
     try {
-      const response = await axios.get('http://localhost:3009/api/analytics/team-members', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(api.analytics.teamMembers);
       setTeamStats(response.data);
     } catch (err) {
       console.error('Error fetching team stats:', err);
@@ -98,10 +93,7 @@ export default function AnalyticsPage() {
   const fetchMemberAnalytics = async (userId: string) => {
     setLoadingMember(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3009/api/analytics/user/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get(api.analytics.user(userId));
       setMemberAnalytics(response.data);
     } catch (err) {
       setMemberAnalytics([]);

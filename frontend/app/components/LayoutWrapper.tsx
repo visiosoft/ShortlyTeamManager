@@ -43,17 +43,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     !pathname.startsWith('/not-found') &&
     /^\/[a-zA-Z0-9_-]+$/.test(pathname);
   
-  // Debug logging to see what's happening with short URL detection
-  console.log('=== LayoutWrapper Debug ===');
-  console.log('pathname:', pathname);
-  console.log('pathname length:', pathname?.length);
-  console.log('startsWith /:', pathname?.startsWith('/'));
-  console.log('includes /:', pathname?.includes('/'));
-  console.log('regex test:', pathname ? /^\/[a-zA-Z0-9_-]+$/.test(pathname) : 'N/A');
-  console.log('isShortUrlRedirect:', isShortUrlRedirect);
-  console.log('isPublicPage:', isPublicPage);
-  console.log('isAuthenticatedPage:', isAuthenticatedPage);
-  console.log('========================');
+
   
   useEffect(() => {
     if (!isPublicPage && !isShortUrlRedirect) {

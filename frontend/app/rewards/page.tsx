@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { Save, Plus, Trash2, ArrowLeft } from 'lucide-react'
-import axios from 'axios'
+import apiClient from '@/lib/axios'
+import { api } from '@/lib/api'
 
 interface RewardTier {
   clicks: number
@@ -101,12 +102,7 @@ export default function RewardsPage() {
         return
       }
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/my-team`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const response = await apiClient.get(api.teams.myTeam)
       
       console.log('Team data received:', response.data)
       
@@ -149,13 +145,7 @@ export default function RewardsPage() {
     setSaving(true)
     try {
       const token = localStorage.getItem('token')
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/teams/${user.team.id}/rewards`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      await apiClient.post(api.teams.rewards(user.team.id), data)
       alert('Rewards updated successfully!')
     } catch (error: any) {
       console.error('Error updating rewards:', error)
