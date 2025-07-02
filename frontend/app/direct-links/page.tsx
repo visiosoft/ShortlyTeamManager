@@ -29,6 +29,7 @@ interface UrlData {
   }
   createdAt: string;
   updatedAt: string;
+  teamId?: string;
 }
 
 interface UserData {
@@ -76,28 +77,16 @@ export default function DirectLinksPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Filter admin-created URLs - show all for admins, only assigned to current user for regular users
+        // Filter admin-created URLs - show all for admins, only for user's team for regular users
         const adminCreatedUrls = data.urls.filter((url: UrlData) => {
           const isAdminCreated = url.isAdminCreated;
-          
           if (user?.role === 'admin') {
             return isAdminCreated;
-          } else {
-            // Extract ObjectId from userId if it's a JavaScript object string
-            let urlUserId: string;
-            if (typeof url.userId === 'string') {
-              const objectIdMatch = url.userId.match(/new ObjectId\('([^']+)'\)/);
-              if (objectIdMatch) {
-                urlUserId = objectIdMatch[1];
-              } else {
-                urlUserId = url.userId;
-              }
-            } else {
-              urlUserId = url.userId;
-            }
-            
-            return isAdminCreated && urlUserId === user?.id;
+          } else if (user?.role === 'user') {
+            // Show admin-created URLs for the user's team
+            return isAdminCreated && url.teamId?.toString() === user.team?.id?.toString();
           }
+          return false;
         });
         setUrls(adminCreatedUrls);
       } else {
@@ -184,7 +173,7 @@ export default function DirectLinksPage() {
             <p className="text-gray-600 mb-4">
               {user?.role === 'admin' 
                 ? "You haven't created any direct links for your team members yet."
-                : "No direct links have been created for you by your team admin yet."
+                : "No direct links have been created for your team by your admin yet. If your admin creates a direct link for your team, it will appear here."
               }
             </p>
             {user?.role === 'admin' && (

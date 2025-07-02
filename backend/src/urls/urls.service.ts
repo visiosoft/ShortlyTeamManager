@@ -273,7 +273,7 @@ export class UrlsService {
       id: url._id.toString(),
       originalUrl: url.originalUrl,
       shortCode: url.shortCode,
-      shortUrl: `${process.env.BASE_URL || 'https://shorly.uk'}/${url.shortCode}`,
+      shortUrl: `${process.env.BASE_URL || 'http://localhost:3009'}/${url.shortCode}`,
       clicks: url.clicks,
       isActive: url.isActive,
       title: url.title,

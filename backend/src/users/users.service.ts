@@ -38,4 +38,19 @@ export class UsersService {
   async updateLastLogin(userId: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, { lastLoginAt: new Date() });
   }
+
+  async updateUser(id: string, update: Partial<User>): Promise<UserDocument> {
+    const user = await this.userModel.findByIdAndUpdate(id, update, { new: true });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const user = await this.userModel.findByIdAndDelete(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  }
 } 
