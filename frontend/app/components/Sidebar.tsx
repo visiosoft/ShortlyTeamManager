@@ -104,18 +104,29 @@ export default function Sidebar() {
               label="Dashboard" 
               isActive={pathname === '/dashboard'}
             />
-            <NavItem 
-              href="/dashboard" 
-              icon={<Link className="w-4 h-4" />} 
-              label="Link Management" 
-              isActive={pathname === '/dashboard'}
-            />
-            <NavItem 
-              href="/dashboard" 
-              icon={<TrendingUp className="w-4 h-4" />} 
-              label="Limits / Volume" 
-              isActive={pathname === '/dashboard'}
-            />
+            {user?.role === 'admin' ? (
+              <>
+                <NavItem 
+                  href="/dashboard" 
+                  icon={<Link className="w-4 h-4" />} 
+                  label="Link Management" 
+                  isActive={pathname === '/dashboard'}
+                />
+                <NavItem 
+                  href="/dashboard" 
+                  icon={<TrendingUp className="w-4 h-4" />} 
+                  label="Limits / Volume" 
+                  isActive={pathname === '/dashboard'}
+                />
+              </>
+            ) : (
+              <NavItem 
+                href="/direct-links" 
+                icon={<Shield className="w-4 h-4" />} 
+                label="Direct Links" 
+                isActive={pathname === '/direct-links'}
+              />
+            )}
           </div>
         </div>
 

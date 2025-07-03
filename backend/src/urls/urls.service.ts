@@ -355,7 +355,11 @@ export class UrlsService {
       id: url._id.toString(),
       originalUrl: url.originalUrl,
       shortCode: url.shortCode,
+<<<<<<< HEAD
+      shortUrl: `${process.env.BASE_URL || 'http://localhost:3009'}/${url.shortCode}`,
+=======
       shortUrl: `${process.env.BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://shorly.uk' : 'http://localhost:3000')}/${url.shortCode}`,
+>>>>>>> 458f2a2d85f265839c8a47c8affa394548a0cbc6
       clicks: url.clicks,
       isActive: url.isActive,
       title: url.title,

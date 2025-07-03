@@ -58,6 +58,8 @@ export default function TeamMembers() {
   const [memberUrls, setMemberUrls] = useState<Record<string, UrlData[]>>({})
   const [editingUrlId, setEditingUrlId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<UrlData>>({})
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [editMemberForm, setEditMemberForm] = useState<Partial<TeamMember>>({})
   const router = useRouter()
 
   const {
@@ -151,6 +153,62 @@ export default function TeamMembers() {
       alert('Failed to update URL')
     }
   }
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!window.confirm('Are you sure you want to delete this team member?')) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/${memberId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTeamMembers(prev => prev.filter(member => member._id !== memberId));
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error deleting team member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditMemberClick = (member: TeamMember) => {
+    setEditingMemberId(member._id);
+    setEditMemberForm({
+      firstName: member.firstName,
+      lastName: member.lastName,
+      email: member.email,
+      role: member.role,
+    });
+  };
+
+  const handleEditMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditMemberForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditMemberSave = async (memberId: string) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/${memberId}`,
+        editMemberForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTeamMembers(prev => prev.map(m => m._id === memberId ? { ...m, ...response.data } : m));
+      setEditingMemberId(null);
+      setEditMemberForm({});
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error updating team member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditMemberCancel = () => {
+    setEditingMemberId(null);
+    setEditMemberForm({});
+  };
 
   if (!user) {
     return <div>Loading...</div>
@@ -328,26 +386,81 @@ export default function TeamMembers() {
                         </span>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="text-sm font-medium text-gray-900">
-                          {member.firstName} {member.lastName}
-                        </h4>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          member.role === 'admin' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {member.role}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">{member.email}</p>
-                      {member.lastLoginAt && (
-                        <p className="text-xs text-gray-400">
-                          Last login: {new Date(member.lastLoginAt).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
+                    {editingMemberId === member._id ? (
+                      <form className="flex items-center space-x-2 flex-1" onSubmit={e => { e.preventDefault(); handleEditMemberSave(member._id); }}>
+                        <input
+                          name="firstName"
+                          value={editMemberForm.firstName || ''}
+                          onChange={handleEditMemberChange}
+                          className="px-2 py-1 border rounded w-24"
+                          placeholder="First Name"
+                          required
+                        />
+                        <input
+                          name="lastName"
+                          value={editMemberForm.lastName || ''}
+                          onChange={handleEditMemberChange}
+                          className="px-2 py-1 border rounded w-24"
+                          placeholder="Last Name"
+                          required
+                        />
+                        <input
+                          name="email"
+                          value={editMemberForm.email || ''}
+                          onChange={handleEditMemberChange}
+                          className="px-2 py-1 border rounded w-48"
+                          placeholder="Email"
+                          required
+                          type="email"
+                        />
+                        <select
+                          name="role"
+                          value={editMemberForm.role || 'user'}
+                          onChange={handleEditMemberChange}
+                          className="px-2 py-1 border rounded"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Save</button>
+                        <button type="button" onClick={handleEditMemberCancel} className="bg-gray-300 px-3 py-1 rounded ml-2">Cancel</button>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {member.firstName} {member.lastName}
+                          </h4>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            member.role === 'admin' 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {member.role}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500">{member.email}</p>
+                        {member.lastLoginAt && (
+                          <p className="text-xs text-gray-400">
+                            Last login: {new Date(member.lastLoginAt).toLocaleDateString()}
+                          </p>
+                        )}
+                        <button
+                          onClick={() => handleEditMemberClick(member)}
+                          className="ml-auto text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Edit Team Member"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMember(member._id)}
+                          className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
+                          title="Delete Team Member"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                   <div className="mt-2 ml-12">
                     <h5 className="text-xs text-gray-500 mb-1">Assigned URLs:</h5>

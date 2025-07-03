@@ -30,6 +30,7 @@ interface UrlData {
   }
   createdAt: string;
   updatedAt: string;
+  teamId?: string;
 }
 
 interface UserData {
