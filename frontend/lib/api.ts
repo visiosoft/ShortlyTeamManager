@@ -31,7 +31,7 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    return response;
   } catch (error) {
     console.error('API call failed:', error);
     throw error;
@@ -53,6 +53,7 @@ export const api = {
     create: '/api/urls',
     createAdmin: '/api/urls/admin',
     myUrls: '/api/urls/my-urls',
+    assignedToMe: '/api/urls/assigned-to-me',
     teamUrls: '/api/urls/team-urls',
     userUrls: (userId: string) => `/api/urls/user/${userId}`,
     getById: (id: string) => `/api/urls/${id}`,

@@ -70,35 +70,11 @@ export default function DirectLinksPage() {
 
   const fetchDirectLinks = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await apiCall(api.urls.teamUrls);
+      const response = await apiCall(api.urls.assignedToMe);
 
       if (response.ok) {
         const data = await response.json();
-        // Filter admin-created URLs - show all for admins, only assigned to current user for regular users
-        const adminCreatedUrls = data.urls.filter((url: UrlData) => {
-          const isAdminCreated = url.isAdminCreated;
-          
-          if (user?.role === 'admin') {
-            return isAdminCreated;
-          } else {
-            // Extract ObjectId from userId if it's a JavaScript object string
-            let urlUserId: string;
-            if (typeof url.userId === 'string') {
-              const objectIdMatch = url.userId.match(/new ObjectId\('([^']+)'\)/);
-              if (objectIdMatch) {
-                urlUserId = objectIdMatch[1];
-              } else {
-                urlUserId = url.userId;
-              }
-            } else {
-              urlUserId = url.userId;
-            }
-            
-            return isAdminCreated && urlUserId === user?.id;
-          }
-        });
-        setUrls(adminCreatedUrls);
+        setUrls(data.urls);
       } else {
         console.error('Failed to fetch direct links');
       }
@@ -122,7 +98,6 @@ export default function DirectLinksPage() {
   const regenerateShortUrl = async (urlId: string) => {
     setRegenerating(urlId);
     try {
-      const token = localStorage.getItem('token');
       const response = await apiCall(api.urls.regenerate(urlId), {
         method: 'POST',
       });
@@ -158,18 +133,9 @@ export default function DirectLinksPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Direct Links</h1>
             <p className="text-gray-600 mt-2">
-              URLs created by admins for team members. Original URLs are hidden for security.
+              URLs assigned to you by your team admin. These are secure, shortened links for your use.
             </p>
           </div>
-          {user?.role === 'admin' && (
-            <button
-              onClick={() => router.push('/team-urls')}
-              className="flex items-center space-x-2 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-            >
-              <Link className="h-4 w-4" />
-              <span>Create New Direct Link</span>
-            </button>
-          )}
         </div>
 
         {urls.length === 0 ? (
@@ -177,19 +143,8 @@ export default function DirectLinksPage() {
             <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Direct Links Found</h3>
             <p className="text-gray-600 mb-4">
-              {user?.role === 'admin' 
-                ? "You haven't created any direct links for your team members yet."
-                : "No direct links have been created for you by your team admin yet."
-              }
+              No direct links have been assigned to you by your team admin yet. Contact your admin to request direct links.
             </p>
-            {user?.role === 'admin' && (
-              <button
-                onClick={() => router.push('/team-urls')}
-                className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Create Your First Direct Link
-              </button>
-            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -220,15 +175,10 @@ export default function DirectLinksPage() {
                         <Link className="h-4 w-4" />
                         <span>{url.clicks} clicks</span>
                       </div>
-                      {url.user && (
-                        <div className="flex items-center space-x-1">
-                          <span>Assigned to: {url.user.firstName} {url.user.lastName}</span>
-                        </div>
-                      )}
                       {url.createdByAdmin && (
                         <div className="flex items-center space-x-1">
                           <Shield className="h-4 w-4" />
-                          <span>By {url.createdByAdmin.firstName} {url.createdByAdmin.lastName}</span>
+                          <span>Created by {url.createdByAdmin.firstName} {url.createdByAdmin.lastName}</span>
                         </div>
                       )}
                       <span>Created: {new Date(url.createdAt).toLocaleDateString()}</span>

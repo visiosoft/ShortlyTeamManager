@@ -97,6 +97,21 @@ export class UrlsService {
   async incrementClicks(shortCode: string, ipAddress: string, userAgent?: string, referer?: string): Promise<void> {
     const url = await this.findByShortCode(shortCode);
     
+    // Check for recent clicks from the same IP to prevent double counting
+    // const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    // Check if this IP has clicked this URL in the last 5 minutes
+    // const recentClick = await this.analyticsService.findRecentClick(
+    //   url._id.toString(),
+    //   ipAddress,
+    //   fiveMinutesAgo
+    // );
+    
+    // if (recentClick) {
+    //   // Skip incrementing if recent click exists from same IP
+    //   return;
+    // }
+    
     // Increment clicks
     await this.urlModel.updateOne(
       { shortCode },
@@ -124,9 +139,76 @@ export class UrlsService {
     totalPages: number;
   }> {
     const skip = (page - 1) * limit;
+    
+    // Validate ObjectIds before using them
+    let validUserId: Types.ObjectId;
+    let validTeamId: Types.ObjectId;
+    
+    try {
+      validUserId = new Types.ObjectId(userId);
+    } catch (error) {
+      throw new Error('Invalid user ID format');
+    }
+    
+    try {
+      validTeamId = Types.ObjectId.createFromHexString(teamId);
+    } catch (error) {
+      throw new Error('Invalid team ID format');
+    }
+    
     const query = { 
-      userId: new Types.ObjectId(userId), 
-      teamId: Types.ObjectId.createFromHexString(teamId) 
+      userId: validUserId, 
+      teamId: validTeamId 
+    };
+    
+    const [urls, total] = await Promise.all([
+      this.urlModel.find(query)
+        .populate('createdByAdmin', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.urlModel.countDocuments(query),
+    ]);
+
+    return {
+      urls: urls.map(url => this.mapToResponseDto(url)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findUrlsAssignedToUser(userId: string, teamId: string, page: number = 1, limit: number = 10): Promise<{
+    urls: UrlResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
+    
+    // Validate ObjectIds before using them
+    let validUserId: Types.ObjectId;
+    let validTeamId: Types.ObjectId;
+    
+    try {
+      validUserId = new Types.ObjectId(userId);
+    } catch (error) {
+      throw new Error('Invalid user ID format');
+    }
+    
+    try {
+      validTeamId = Types.ObjectId.createFromHexString(teamId);
+    } catch (error) {
+      throw new Error('Invalid team ID format');
+    }
+    
+    const query = { 
+      userId: validUserId, 
+      teamId: validTeamId,
+      isActive: true
     };
     
     const [urls, total] = await Promise.all([

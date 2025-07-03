@@ -136,19 +136,6 @@ export default function Sidebar() {
               isActive={pathname === '/team-urls'}
               disabled={user?.role !== 'admin'}
             />
-            <NavItem 
-              href="/direct-links" 
-              icon={<Shield className="w-4 h-4" />} 
-              label="Direct Links" 
-              isActive={pathname === '/direct-links'}
-            />
-            <NavItem 
-              href="/team-members" 
-              icon={<Plus className="w-4 h-4" />} 
-              label="Create New Team" 
-              isActive={pathname === '/team-members'}
-              disabled={user?.role !== 'admin'}
-            />
           </div>
         </div>
 
@@ -169,16 +156,25 @@ export default function Sidebar() {
               disabled={user?.role !== 'admin'}
             />
             <NavItem 
+              href="/direct-links" 
+              icon={<Link className="w-4 h-4" />} 
+              label="Direct Links" 
+              isActive={pathname === '/direct-links'}
+              disabled={user?.role === 'admin'}
+            />
+            <NavItem 
               href="/dashboard" 
               icon={<Link className="w-4 h-4" />} 
               label="Link-in-bio" 
               isActive={false}
+              disabled={true}
             />
             <NavItem 
               href="/dashboard" 
               icon={<FileText className="w-4 h-4" />} 
               label="Surveys" 
               isActive={false}
+              disabled={true}
             />
           </div>
         </div>

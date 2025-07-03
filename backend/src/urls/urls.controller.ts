@@ -85,6 +85,24 @@ export class UrlsController {
     return this.urlsService.findAllByUser(req.user.userId, req.user.teamId, page, limit);
   }
 
+  @Get('urls/assigned-to-me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get URLs assigned to current user (including admin-created URLs)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'Assigned URLs retrieved successfully',
+  })
+  async findUrlsAssignedToMe(
+    @Request() req,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.urlsService.findUrlsAssignedToUser(req.user.userId, req.user.teamId, page, limit);
+  }
+
   @Get('urls/team-urls')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -147,7 +165,7 @@ export class UrlsController {
     @Request() req,
   ): Promise<void> {
     const url = await this.urlsService.findByShortCode(shortCode);
-    
+    debugger;
     // Get IP address and user agent
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');
@@ -166,7 +184,7 @@ export class UrlsController {
     @Request() req,
   ) {
     const url = await this.urlsService.findByShortCode(shortCode);
-    
+    debugger;
     // Get IP address and user agent
     const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const userAgent = req.get('User-Agent');

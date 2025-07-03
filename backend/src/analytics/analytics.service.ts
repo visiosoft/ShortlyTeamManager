@@ -35,6 +35,18 @@ export class AnalyticsService {
     await analytics.save();
   }
 
+  async findRecentClick(
+    urlId: string,
+    ipAddress: string,
+    since: Date,
+  ): Promise<ClickAnalyticsDocument | null> {
+    return this.clickAnalyticsModel.findOne({
+      urlId: new Types.ObjectId(urlId),
+      ipAddress,
+      createdAt: { $gte: since }
+    }).exec();
+  }
+
   async getUrlAnalytics(urlId: string, teamId: string): Promise<ClickAnalyticsDocument[]> {
     return this.clickAnalyticsModel
       .find({
