@@ -158,11 +158,7 @@ export default function TeamMembers() {
     if (!window.confirm('Are you sure you want to delete this team member?')) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/${memberId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await apiClient.delete(`/api/users/${memberId}`);
       setTeamMembers(prev => prev.filter(member => member._id !== memberId));
     } catch (error: any) {
       alert(error.response?.data?.message || 'Error deleting team member');
@@ -189,12 +185,7 @@ export default function TeamMembers() {
   const handleEditMemberSave = async (memberId: string) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/${memberId}`,
-        editMemberForm,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await apiClient.patch(`/api/users/${memberId}`, editMemberForm);
       setTeamMembers(prev => prev.map(m => m._id === memberId ? { ...m, ...response.data } : m));
       setEditingMemberId(null);
       setEditMemberForm({});
