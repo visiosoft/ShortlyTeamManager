@@ -20,6 +20,9 @@ interface PaymentInfo {
   bankName: string
   accountNumber: string
   accountHolderName: string
+  branchCode?: string
+  swiftCode?: string
+  iban?: string
   currency: string
   totalEarnings: number
   paidAmount: number
