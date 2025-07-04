@@ -113,12 +113,6 @@ export default function Home() {
                 How it works
               </button>
               <button 
-                onClick={() => scrollToSection('pricing')}
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-              >
-                Pricing
-              </button>
-              <button 
                 onClick={() => scrollToSection('referral-program')}
                 className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
               >
@@ -254,6 +248,22 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Monetize Every Audience Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Monetize every audience type
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            No matter what audience and web or mobile traffic you want to monetize, we are ready to meet your expectations for outstanding balance between revenue and experience for your users
+          </p>
+          <Link href="/register" className="group bg-gradient-to-r from-blue-600 to-green-600 text-white px-10 py-5 rounded-xl text-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl inline-flex items-center space-x-2">
+            <span>Start Earning</span>
+            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-200" />
+          </Link>
+        </div>
+      </section>
+
       {/* Referral Program Section */}
       <section id="referral-program" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -295,185 +305,6 @@ export default function Home() {
                 <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
                 <span>Refer Friends Now</span>
               </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Simple
-              <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent"> Pricing</span>
-            </h2>
-            <p className="text-xl text-gray-600">
-              Choose the plan that fits your needs
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group bg-white p-8 rounded-2xl shadow-sm border-2 border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                <div className="flex items-baseline justify-center mb-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                    $0
-                  </span>
-                  <span className="text-gray-600 ml-2 text-lg">/month</span>
-                </div>
-                <p className="text-gray-600">Perfect for getting started</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Up to 100 links</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Basic analytics</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Reward system</span>
-                </li>
-              </ul>
-              
-              <Link 
-                href="/register"
-                className="w-full py-4 px-6 rounded-xl font-semibold bg-gray-100 text-gray-900 hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 block text-center"
-              >
-                Get Started Free
-              </Link>
-            </div>
-
-            <div className="group bg-white p-8 rounded-2xl shadow-sm border-2 border-blue-500 relative scale-105 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">
-                  Most Popular
-                </span>
-              </div>
-              
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                <div className="flex items-baseline justify-center mb-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                    $9
-                  </span>
-                  <span className="text-gray-600 ml-2 text-lg">/month</span>
-                </div>
-                <p className="text-gray-600">For professionals and teams</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Unlimited links</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Advanced analytics</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Team collaboration</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Higher rewards</span>
-                </li>
-              </ul>
-              
-              <Link 
-                href="/register"
-                className="w-full py-4 px-6 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-green-600 text-white hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl block text-center"
-              >
-                Start Pro Trial
-              </Link>
-            </div>
-
-            <div className="group bg-white p-8 rounded-2xl shadow-sm border-2 border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
-                <div className="flex items-baseline justify-center mb-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                    Custom
-                  </span>
-                </div>
-                <p className="text-gray-600">For large organizations</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Everything in Pro</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">White-label solution</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Dedicated support</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Custom integrations</span>
-                </li>
-              </ul>
-              
-              <Link 
-                href="/register"
-                className="w-full py-4 px-6 rounded-xl font-semibold bg-gray-100 text-gray-900 hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 block text-center"
-              >
-                Contact Sales
-              </Link>
             </div>
           </div>
         </div>

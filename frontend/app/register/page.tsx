@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import Link from 'next/link'
 import axios from 'axios'
+import { ArrowRight } from 'lucide-react'
 
 interface RegisterData {
   email: string
@@ -76,9 +77,29 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-8">
-      <div className="max-w-md w-full mx-4">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-green-600 py-4 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+              <span className="text-white font-bold text-xl">E</span>
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+              Earn Reward
+            </span>
+          </Link>
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="text-white/90 hover:text-white transition-colors duration-200">Home</Link>
+            <Link href="/blog" className="text-white/90 hover:text-white transition-colors duration-200">Blog</Link>
+            <Link href="/login" className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">Login</Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Main Card */}
+      <div className="flex items-center justify-center min-h-[80vh] py-12 px-4">
+        <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
             <p className="text-gray-600">Start your team and create short URLs</p>
@@ -201,9 +222,9 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-700 hover:to-green-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Signing up...' : 'Sign Up'}
             </button>
           </form>
 
@@ -230,10 +251,6 @@ export default function Register() {
               </svg>
               Sign up with Google
             </button>
-
-            <p className="mt-3 text-xs text-gray-500 text-center">
-              Note: Google users are created as regular team members, not team admins
-            </p>
           </div>
 
           <div className="mt-6 text-center">
