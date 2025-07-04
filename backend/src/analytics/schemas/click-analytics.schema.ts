@@ -17,8 +17,8 @@ export class ClickAnalytics {
   @Prop({ type: Types.ObjectId, ref: 'Team', required: true })
   teamId: Types.ObjectId;
 
-  @Prop({ required: true })
-  ipAddress: string;
+  @Prop()
+  ipAddress?: string;
 
   @Prop()
   userAgent?: string;

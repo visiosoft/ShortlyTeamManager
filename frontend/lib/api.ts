@@ -84,5 +84,11 @@ export const api = {
     countriesDetailed: '/api/analytics/countries/detailed',
     userCountriesDetailed: '/api/analytics/user/countries/detailed',
     teamMembers: '/api/analytics/team-members',
+    // Admin analytics endpoints
+    admin: {
+      teamTotalClicksMonth: '/api/analytics/admin/team-total-clicks-month',
+      teamCountries: '/api/analytics/admin/team-countries',
+      topTeamCountries: '/api/analytics/admin/top-team-countries',
+    },
   },
 }; 

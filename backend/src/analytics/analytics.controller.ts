@@ -50,4 +50,31 @@ export class AnalyticsController {
     // Optionally, check if user is admin here
     return this.analyticsService.getTeamMemberClickStats(req.user.teamId);
   }
+
+  // Admin endpoints for team analytics
+  @Get('analytics/admin/team-total-clicks-month')
+  async getTeamTotalClicksForMonth(
+    @Request() req,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    return this.analyticsService.getTeamTotalClicksForMonth(
+      req.user.teamId,
+      year ? parseInt(year) : undefined,
+      month ? parseInt(month) : undefined,
+    );
+  }
+
+  @Get('analytics/admin/team-countries')
+  async getTeamCountries(@Request() req) {
+    return this.analyticsService.getTeamCountries(req.user.teamId);
+  }
+
+  @Get('analytics/admin/top-team-countries')
+  async getTopTeamCountries(
+    @Request() req,
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.analyticsService.getTopTeamCountries(req.user.teamId, parseInt(limit));
+  }
 } 

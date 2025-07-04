@@ -14,22 +14,22 @@ export class AnalyticsService {
     urlId: string,
     userId: string,
     teamId: string,
-    ipAddress: string,
+    ipAddress?: string,
     userAgent?: string,
     referer?: string,
   ): Promise<void> {
-    // Get geolocation data from IP
-    const geo = geoip.lookup(ipAddress);
+    // Get geolocation data from IP if available
+    const geo = ipAddress ? geoip.lookup(ipAddress) : null;
     
     const analytics = new this.clickAnalyticsModel({
       urlId: new Types.ObjectId(urlId),
       userId: new Types.ObjectId(userId),
       teamId: Types.ObjectId.createFromHexString(teamId),
-      ipAddress,
+      ipAddress: ipAddress || null,
       userAgent,
       referer,
-      country: geo?.country,
-      city: geo?.city,
+      country: geo?.country || null,
+      city: geo?.city || null,
     });
 
     await analytics.save();
@@ -37,14 +37,20 @@ export class AnalyticsService {
 
   async findRecentClick(
     urlId: string,
-    ipAddress: string,
     since: Date,
+    ipAddress?: string,
   ): Promise<ClickAnalyticsDocument | null> {
-    return this.clickAnalyticsModel.findOne({
+    const query: any = {
       urlId: new Types.ObjectId(urlId),
-      ipAddress,
       createdAt: { $gte: since }
-    }).exec();
+    };
+    
+    // Only add IP address to query if it's provided
+    if (ipAddress) {
+      query.ipAddress = ipAddress;
+    }
+    
+    return this.clickAnalyticsModel.findOne(query).exec();
   }
 
   async getUrlAnalytics(urlId: string, teamId: string): Promise<ClickAnalyticsDocument[]> {
@@ -261,6 +267,137 @@ export class AnalyticsService {
       userId: s._id,
       clicks: s.clicks,
       user: userMap[s._id.toString()] || null
+    }));
+  }
+
+  async getTeamTotalClicksForMonth(teamId: string, year?: number, month?: number): Promise<{
+    totalClicks: number;
+    year: number;
+    month: number;
+    monthName: string;
+  }> {
+    const now = new Date();
+    const targetYear = year || now.getFullYear();
+    const targetMonth = month || now.getMonth() + 1; // getMonth() returns 0-11
+
+    const startDate = new Date(targetYear, targetMonth - 1, 1);
+    const endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+
+    const totalClicks = await this.clickAnalyticsModel.countDocuments({
+      teamId: Types.ObjectId.createFromHexString(teamId),
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    });
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    return {
+      totalClicks,
+      year: targetYear,
+      month: targetMonth,
+      monthName: monthNames[targetMonth - 1]
+    };
+  }
+
+  async getTeamCountries(teamId: string): Promise<Array<{
+    country: string;
+    countryCode: string;
+    clicks: number;
+    percentage: number;
+  }>> {
+    const totalClicks = await this.clickAnalyticsModel.countDocuments({
+      teamId: Types.ObjectId.createFromHexString(teamId),
+      country: { $exists: true, $ne: null }
+    });
+
+    const countryStats = await this.clickAnalyticsModel.aggregate([
+      {
+        $match: {
+          teamId: Types.ObjectId.createFromHexString(teamId),
+          country: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$country',
+          clicks: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { clicks: -1 }
+      }
+    ]);
+
+    return countryStats.map(stat => ({
+      country: stat._id,
+      countryCode: stat._id,
+      clicks: stat.clicks,
+      percentage: totalClicks > 0 ? Math.round((stat.clicks / totalClicks) * 100 * 100) / 100 : 0
+    }));
+  }
+
+  async getTopTeamCountries(teamId: string, limit: number = 10): Promise<Array<{
+    country: string;
+    countryCode: string;
+    clicks: number;
+    percentage: number;
+    cities: Array<{ city: string; clicks: number }>;
+  }>> {
+    const totalClicks = await this.clickAnalyticsModel.countDocuments({
+      teamId: Types.ObjectId.createFromHexString(teamId),
+      country: { $exists: true, $ne: null }
+    });
+
+    const topCountries = await this.clickAnalyticsModel.aggregate([
+      {
+        $match: {
+          teamId: Types.ObjectId.createFromHexString(teamId),
+          country: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            country: '$country',
+            city: '$city'
+          },
+          clicks: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.country',
+          totalClicks: { $sum: '$clicks' },
+          cities: {
+            $push: {
+              city: '$_id.city',
+              clicks: '$clicks'
+            }
+          }
+        }
+      },
+      {
+        $sort: { totalClicks: -1 }
+      },
+      {
+        $limit: limit
+      }
+    ]);
+
+    return topCountries.map(stat => ({
+      country: stat._id,
+      countryCode: stat._id,
+      clicks: stat.totalClicks,
+      percentage: totalClicks > 0 ? Math.round((stat.totalClicks / totalClicks) * 100 * 100) / 100 : 0,
+      cities: stat.cities
+        .filter(city => city.city)
+        .sort((a, b) => b.clicks - a.clicks)
+        .slice(0, 5) // Top 5 cities per country
     }));
   }
 } 

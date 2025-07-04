@@ -27,6 +27,28 @@ interface TeamMemberStat {
   } | null;
 }
 
+interface TeamTotalClicksMonth {
+  totalClicks: number;
+  year: number;
+  month: number;
+  monthName: string;
+}
+
+interface TeamCountry {
+  country: string;
+  countryCode: string;
+  clicks: number;
+  percentage: number;
+}
+
+interface TopTeamCountry {
+  country: string;
+  countryCode: string;
+  clicks: number;
+  percentage: number;
+  cities: Array<{ city: string; clicks: number }>;
+}
+
 export default function AnalyticsPage() {
   const [user, setUser] = useState<any>(null);
   const [countryData, setCountryData] = useState<CountryData[]>([]);
@@ -43,6 +65,13 @@ export default function AnalyticsPage() {
     x: 0,
     y: 0
   });
+  
+  // New admin analytics state
+  const [teamTotalClicksMonth, setTeamTotalClicksMonth] = useState<TeamTotalClicksMonth | null>(null);
+  const [teamCountries, setTeamCountries] = useState<TeamCountry[]>([]);
+  const [topTeamCountries, setTopTeamCountries] = useState<TopTeamCountry[]>([]);
+  const [loadingAdminData, setLoadingAdminData] = useState(false);
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +88,7 @@ export default function AnalyticsPage() {
     fetchAnalytics();
     if (parsedUser.role === 'admin') {
       fetchTeamStats(token);
+      fetchAdminAnalytics();
     }
   }, [router]);
 
@@ -87,6 +117,31 @@ export default function AnalyticsPage() {
       setTeamStats(response.data);
     } catch (err) {
       console.error('Error fetching team stats:', err);
+    }
+  };
+
+  const fetchAdminAnalytics = async () => {
+    if (user?.role !== 'admin') return;
+    
+    try {
+      setLoadingAdminData(true);
+      
+      // Fetch team total clicks for current month
+      const totalClicksResponse = await apiClient.get(api.analytics.admin.teamTotalClicksMonth);
+      setTeamTotalClicksMonth(totalClicksResponse.data);
+      
+      // Fetch team countries
+      const countriesResponse = await apiClient.get(api.analytics.admin.teamCountries);
+      setTeamCountries(countriesResponse.data);
+      
+      // Fetch top team countries
+      const topCountriesResponse = await apiClient.get(api.analytics.admin.topTeamCountries);
+      setTopTeamCountries(topCountriesResponse.data);
+      
+    } catch (err) {
+      console.error('Error fetching admin analytics:', err);
+    } finally {
+      setLoadingAdminData(false);
     }
   };
 
@@ -181,6 +236,66 @@ export default function AnalyticsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Admin: Team Total Clicks for Month */}
+        {user?.role === 'admin' && (
+          <div className="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <MousePointer className="h-6 w-6 mr-2 text-green-600" /> Team Total Clicks for {teamTotalClicksMonth?.monthName || 'Current Month'}
+            </h2>
+            {loadingAdminData ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading team analytics...</p>
+              </div>
+            ) : teamTotalClicksMonth ? (
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-600 mb-2">
+                  {teamTotalClicksMonth.totalClicks.toLocaleString()}
+                </div>
+                <p className="text-gray-600">
+                  Total clicks for {teamTotalClicksMonth.monthName} {teamTotalClicksMonth.year}
+                </p>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center">No team click data available for this month.</p>
+            )}
+          </div>
+        )}
+
+        {/* Admin: Team Countries Overview */}
+        {user?.role === 'admin' && (
+          <div className="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <Globe className="h-6 w-6 mr-2 text-purple-600" /> Team Countries Overview
+            </h2>
+            {loadingAdminData ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading team countries...</p>
+              </div>
+            ) : teamCountries.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teamCountries.slice(0, 6).map((country, index) => (
+                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{country.country}</p>
+                        <p className="text-sm text-gray-500">{country.countryCode}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-purple-600">{country.clicks}</p>
+                        <p className="text-sm text-gray-500">{country.percentage}%</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center">No team country data available.</p>
+            )}
           </div>
         )}
 
@@ -481,6 +596,64 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+
+        {/* Admin: Top Team Countries with Cities */}
+        {user?.role === 'admin' && (
+          <div className="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <MapPin className="h-6 w-6 mr-2 text-orange-600" /> Top Team Countries with Cities
+            </h2>
+            {loadingAdminData ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading top team countries...</p>
+              </div>
+            ) : topTeamCountries.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {topTeamCountries.map((country, index) => (
+                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-sm font-semibold text-orange-600">
+                          {index + 1}
+                        </div>
+                        <div className="ml-3">
+                          <p className="font-medium text-gray-900">{country.country}</p>
+                          <p className="text-sm text-gray-500">{country.countryCode}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-orange-600">{country.clicks}</p>
+                        <p className="text-sm text-gray-500">{country.percentage}%</p>
+                      </div>
+                    </div>
+                    
+                    {country.cities.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Top Cities:</p>
+                        <div className="space-y-1">
+                          {country.cities.slice(0, 3).map((city, cityIndex) => (
+                            <div key={city.city} className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600">{city.city}</span>
+                              <span className="text-gray-500">{city.clicks} clicks</span>
+                            </div>
+                          ))}
+                          {country.cities.length > 3 && (
+                            <p className="text-xs text-gray-500">
+                              +{country.cities.length - 3} more cities
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center">No top team countries data available.</p>
+            )}
+          </div>
+        )}
 
         {/* Detailed Country View */}
         {selectedCountry && (

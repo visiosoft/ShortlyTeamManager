@@ -165,8 +165,8 @@ export default function PrivacyPolicy() {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-gray-700">
                   <strong>Email:</strong> privacy@shorly.uk<br />
-                  <strong>Address:</strong> [Your Business Address]<br />
-                  <strong>Phone:</strong> [Your Contact Number]
+                  <strong>Address:</strong> Masar 1=, Dubai<br />
+                  <strong>Phone:</strong> 0569420950
                 </p>
               </div>
             </section>
