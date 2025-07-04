@@ -133,17 +133,32 @@ export default function Sidebar() {
               isActive={pathname === '/team-urls'}
               disabled={user?.role !== 'admin'}
             />
+            <NavItem 
+              href="/admin/payouts" 
+              icon={<DollarSign className="w-4 h-4" />} 
+              label="Payout Management" 
+              isActive={pathname === '/admin/payouts'}
+              disabled={user?.role !== 'admin'}
+            />
           </div>
         </div>
 
         <div className="mb-4">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tools</h3>
           <div className="space-y-1">
+            {user?.role === 'admin' && (
+              <NavItem 
+                href="/analytics" 
+                icon={<BarChart3 className="w-4 h-4" />} 
+                label="Analytics" 
+                isActive={pathname === '/analytics'}
+              />
+            )}
             <NavItem 
-              href="/analytics" 
-              icon={<BarChart3 className="w-4 h-4" />} 
-              label="Analytics" 
-              isActive={pathname === '/analytics'}
+              href="/my-clicks" 
+              icon={<TrendingUp className="w-4 h-4" />} 
+              label="My Clicks" 
+              isActive={pathname === '/my-clicks'}
             />
             <NavItem 
               href="/rewards" 
@@ -151,6 +166,12 @@ export default function Sidebar() {
               label="Rewards" 
               isActive={pathname === '/rewards'}
               disabled={user?.role !== 'admin'}
+            />
+            <NavItem 
+              href="/payment-info" 
+              icon={<DollarSign className="w-4 h-4" />} 
+              label="Payment Info" 
+              isActive={pathname === '/payment-info'}
             />
             <NavItem 
               href="/direct-links" 

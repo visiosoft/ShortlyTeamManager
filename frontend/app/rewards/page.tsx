@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { Save, Plus, Trash2, ArrowLeft } from 'lucide-react'
 import apiClient from '@/lib/axios'
 import { api } from '@/lib/api'
@@ -46,13 +46,8 @@ export default function RewardsPage() {
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
-      rewards: [{ clicks: 1000, amount: 300, currency: 'PKR' }]
+      rewards: [{ clicks: 1000, amount: 350, currency: 'PKR' }]
     }
-  })
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'rewards'
   })
 
   useEffect(() => {
@@ -141,11 +136,17 @@ export default function RewardsPage() {
       alert('Team ID not found. Please refresh the page and try again.')
       return
     }
-
     setSaving(true)
     try {
       const token = localStorage.getItem('token')
-      await apiClient.post(api.teams.rewards(user.team.id), data)
+      const processedData = {
+        rewards: [{
+          clicks: Number(data.rewards[0].clicks),
+          amount: Number(data.rewards[0].amount),
+          currency: data.rewards[0].currency
+        }]
+      }
+      await apiClient.post(api.teams.rewards(user.team.id), processedData)
       alert('Rewards updated successfully!')
     } catch (error: any) {
       console.error('Error updating rewards:', error)
@@ -199,95 +200,71 @@ export default function RewardsPage() {
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Configure Click-Based Rewards</h2>
             <p className="text-gray-600">
-              Set up reward tiers for your team members based on URL click counts. 
-              Users will earn money when their URLs reach the specified click thresholds.
+              Set up a single reward tier for your team members. <br />
+              <span className="font-semibold">Users will earn the reward when they reach the specified click threshold.</span>
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex-1 grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Clicks Required
-                      </label>
-                      <input
-                        {...register(`rewards.${index}.clicks` as const, {
-                          required: 'Clicks required',
-                          min: { value: 1, message: 'Must be at least 1' }
-                        })}
-                        type="number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="1000"
-                      />
-                      {errors.rewards?.[index]?.clicks && (
-                        <p className="mt-1 text-sm text-red-600">{errors.rewards[index]?.clicks?.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reward Amount
-                      </label>
-                      <input
-                        {...register(`rewards.${index}.amount` as const, {
-                          required: 'Amount required',
-                          min: { value: 0, message: 'Must be at least 0' }
-                        })}
-                        type="number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="300"
-                      />
-                      {errors.rewards?.[index]?.amount && (
-                        <p className="mt-1 text-sm text-red-600">{errors.rewards[index]?.amount?.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Currency
-                      </label>
-                      <select
-                        {...register(`rewards.${index}.currency` as const, {
-                          required: 'Currency required'
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="PKR">PKR</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                      </select>
-                      {errors.rewards?.[index]?.currency && (
-                        <p className="mt-1 text-sm text-red-600">{errors.rewards[index]?.currency?.message}</p>
-                      )}
-                    </div>
+              <div className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                <div className="flex-1 grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Clicks Required
+                    </label>
+                    <input
+                      {...register(`rewards.0.clicks` as const, {
+                        required: 'Clicks required',
+                        min: { value: 1, message: 'Must be at least 1' }
+                      })}
+                      type="number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="1000"
+                    />
+                    {errors.rewards?.[0]?.clicks && (
+                      <p className="mt-1 text-sm text-red-600">{errors.rewards[0]?.clicks?.message}</p>
+                    )}
                   </div>
-
-                  {fields.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reward Amount
+                    </label>
+                    <input
+                      {...register(`rewards.0.amount` as const, {
+                        required: 'Amount required',
+                        min: { value: 0, message: 'Must be at least 0' }
+                      })}
+                      type="number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="350"
+                    />
+                    {errors.rewards?.[0]?.amount && (
+                      <p className="mt-1 text-sm text-red-600">{errors.rewards[0]?.amount?.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Currency
+                    </label>
+                    <select
+                      {...register(`rewards.0.currency` as const, {
+                        required: 'Currency required'
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+                      <option value="PKR">PKR</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
+                    {errors.rewards?.[0]?.currency && (
+                      <p className="mt-1 text-sm text-red-600">{errors.rewards[0]?.currency?.message}</p>
+                    )}
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => append({ clicks: 1000, amount: 300, currency: 'PKR' })}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Reward Tier</span>
-            </button>
-
             <div className="pt-4 border-t border-gray-200">
               <button
                 type="submit"

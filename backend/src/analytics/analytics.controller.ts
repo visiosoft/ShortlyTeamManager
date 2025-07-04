@@ -26,8 +26,32 @@ export class AnalyticsController {
   }
 
   @Get('analytics/user/:userId')
-  async getUserAnalytics(@Request() req, @Param('userId') userId: string) {
-    return this.analyticsService.getUserAnalytics(userId, req.user.teamId);
+  async getUserAnalytics(
+    @Request() req,
+    @Param('userId') userId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getUserAnalytics(
+      userId,
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
+  }
+
+  @Get('analytics/my-total-clicks')
+  async getMyTotalClicks(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getMyTotalClicks(
+      req.user.userId,
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('analytics/countries')
@@ -36,19 +60,44 @@ export class AnalyticsController {
   }
 
   @Get('analytics/countries/detailed')
-  async getDetailedCountryAnalytics(@Request() req) {
-    return this.analyticsService.getDetailedCountryAnalytics(req.user.teamId);
+  async getDetailedCountryAnalytics(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getDetailedCountryAnalytics(
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('analytics/user/countries/detailed')
-  async getUserDetailedCountryAnalytics(@Request() req) {
-    return this.analyticsService.getUserDetailedCountryAnalytics(req.user.userId, req.user.teamId);
+  async getUserDetailedCountryAnalytics(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getUserDetailedCountryAnalytics(
+      req.user.userId,
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('analytics/team-members')
-  async getTeamMemberClickStats(@Request() req) {
+  async getTeamMemberClickStats(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     // Optionally, check if user is admin here
-    return this.analyticsService.getTeamMemberClickStats(req.user.teamId);
+    return this.analyticsService.getTeamMemberClickStats(
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
   }
 
   // Admin endpoints for team analytics
@@ -57,24 +106,43 @@ export class AnalyticsController {
     @Request() req,
     @Query('year') year?: string,
     @Query('month') month?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
     return this.analyticsService.getTeamTotalClicksForMonth(
       req.user.teamId,
       year ? parseInt(year) : undefined,
       month ? parseInt(month) : undefined,
+      startDate,
+      endDate,
     );
   }
 
   @Get('analytics/admin/team-countries')
-  async getTeamCountries(@Request() req) {
-    return this.analyticsService.getTeamCountries(req.user.teamId);
+  async getTeamCountries(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getTeamCountries(
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('analytics/admin/top-team-countries')
   async getTopTeamCountries(
     @Request() req,
     @Query('limit') limit: string = '10',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    return this.analyticsService.getTopTeamCountries(req.user.teamId, parseInt(limit));
+    return this.analyticsService.getTopTeamCountries(
+      req.user.teamId,
+      parseInt(limit),
+      startDate,
+      endDate,
+    );
   }
 } 

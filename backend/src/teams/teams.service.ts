@@ -49,33 +49,26 @@ export class TeamsService {
       return { totalEarnings: 0, currency: 'PKR', breakdown: [] };
     }
 
-    let totalEarnings = 0;
-    const breakdown: Array<{ clicks: number; amount: number; currency: string; }> = [];
-    
-    // Sort rewards by clicks in descending order
-    const sortedRewards = [...team.rewards].sort((a, b) => b.clicks - a.clicks);
-    
-    let remainingClicks = totalClicks;
-    
-    for (const reward of sortedRewards) {
-      if (remainingClicks >= reward.clicks) {
-        const rewardCount = Math.floor(remainingClicks / reward.clicks);
-        const earnedAmount = rewardCount * reward.amount;
-        
-        breakdown.push({
-          clicks: reward.clicks * rewardCount,
-          amount: earnedAmount,
-          currency: reward.currency
-        });
-        
-        totalEarnings += earnedAmount;
-        remainingClicks = remainingClicks % reward.clicks;
-      }
+    // Use the first (and only) reward tier
+    const reward = team.rewards[0];
+    if (!reward) {
+      return { totalEarnings: 0, currency: 'PKR', breakdown: [] };
     }
     
+    // Calculate earnings for every click, not just when threshold is met
+    // Formula: (totalClicks * rewardAmount) / threshold
+    const earningsPerClick = reward.amount / reward.clicks;
+    const totalEarnings = totalClicks * earningsPerClick;
+    
+    const breakdown = [{
+      clicks: totalClicks,
+      amount: totalEarnings,
+      currency: reward.currency
+    }];
+    
     return {
-      totalEarnings,
-      currency: team.rewards[0]?.currency || 'PKR',
+      totalEarnings: Math.round(totalEarnings * 100) / 100, // Round to 2 decimal places
+      currency: reward.currency,
       breakdown
     };
   }

@@ -40,15 +40,25 @@ export default function ShortUrlRedirect({ params }: PageProps) {
       }
 
       try {
-        debugger;
         // Use environment variable with fallback to localhost
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'
-        const response = await fetch(`${apiUrl}/api/urls/info/${shortCode}`, {
+        
+        // First, get URL info
+        const infoResponse = await fetch(`${apiUrl}/api/urls/info/${shortCode}`, {
           signal: abortController.current?.signal
         })
         
-        if (response.ok) {
-          const data = await response.json()
+        if (infoResponse.ok) {
+          const data = await infoResponse.json()
+          
+          // Then increment clicks (fire and forget - don't wait for response)
+          fetch(`${apiUrl}/api/urls/increment/${shortCode}`, {
+            method: 'POST',
+            signal: abortController.current?.signal
+          }).catch(() => {
+            // Ignore errors for increment - don't block redirect
+          })
+          
           hasRedirected.current = true
           // Immediate redirect - no loading, no UI
           window.location.href = data.originalUrl

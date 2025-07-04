@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/axios';
 import { api } from '@/lib/api';
-import { Globe, MapPin, Users, MousePointer, BarChart3 } from 'lucide-react';
+import { Globe, MapPin, Users, MousePointer, BarChart3, Calendar, Filter } from 'lucide-react';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 
 interface CountryData {
@@ -49,6 +49,11 @@ interface TopTeamCountry {
   cities: Array<{ city: string; clicks: number }>;
 }
 
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
 export default function AnalyticsPage() {
   const [user, setUser] = useState<any>(null);
   const [countryData, setCountryData] = useState<CountryData[]>([]);
@@ -64,6 +69,21 @@ export default function AnalyticsPage() {
     content: '',
     x: 0,
     y: 0
+  });
+  
+  // Date range filter state
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    // Load cached date range from localStorage
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('analytics_date_range');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    }
+    // Default to last 30 days
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    return { startDate, endDate };
   });
   
   // New admin analytics state
@@ -90,7 +110,14 @@ export default function AnalyticsPage() {
       fetchTeamStats(token);
       fetchAdminAnalytics();
     }
-  }, [router]);
+  }, [router, dateRange]); // Add dateRange as dependency
+
+  // Cache date range when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('analytics_date_range', JSON.stringify(dateRange));
+    }
+  }, [dateRange]);
 
   const fetchAnalytics = async () => {
     try {
@@ -100,7 +127,13 @@ export default function AnalyticsPage() {
         ? api.analytics.countriesDetailed
         : api.analytics.userCountriesDetailed;
       
-      const response = await apiClient.get(endpoint);
+      // Add date range parameters to the request
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
+      const response = await apiClient.get(`${endpoint}?${params}`);
       console.log('Analytics data received:', response.data); // Debug log
       setCountryData(response.data);
     } catch (err) {
@@ -113,7 +146,13 @@ export default function AnalyticsPage() {
 
   const fetchTeamStats = async (token: string) => {
     try {
-      const response = await apiClient.get(api.analytics.teamMembers);
+      // Add date range parameters to team stats request
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
+      const response = await apiClient.get(`${api.analytics.teamMembers}?${params}`);
       setTeamStats(response.data);
     } catch (err) {
       console.error('Error fetching team stats:', err);
@@ -126,16 +165,22 @@ export default function AnalyticsPage() {
     try {
       setLoadingAdminData(true);
       
+      // Add date range parameters to admin analytics requests
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
       // Fetch team total clicks for current month
-      const totalClicksResponse = await apiClient.get(api.analytics.admin.teamTotalClicksMonth);
+      const totalClicksResponse = await apiClient.get(`${api.analytics.admin.teamTotalClicksMonth}?${params}`);
       setTeamTotalClicksMonth(totalClicksResponse.data);
       
       // Fetch team countries
-      const countriesResponse = await apiClient.get(api.analytics.admin.teamCountries);
+      const countriesResponse = await apiClient.get(`${api.analytics.admin.teamCountries}?${params}`);
       setTeamCountries(countriesResponse.data);
       
       // Fetch top team countries
-      const topCountriesResponse = await apiClient.get(api.analytics.admin.topTeamCountries);
+      const topCountriesResponse = await apiClient.get(`${api.analytics.admin.topTeamCountries}?${params}`);
       setTopTeamCountries(topCountriesResponse.data);
       
     } catch (err) {
@@ -148,13 +193,32 @@ export default function AnalyticsPage() {
   const fetchMemberAnalytics = async (userId: string) => {
     setLoadingMember(true);
     try {
-      const response = await apiClient.get(api.analytics.user(userId));
+      // Add date range parameters to member analytics request
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
+      const response = await apiClient.get(`${api.analytics.user(userId)}?${params}`);
       setMemberAnalytics(response.data);
     } catch (err) {
       setMemberAnalytics([]);
     } finally {
       setLoadingMember(false);
     }
+  };
+
+  const handleDateRangeChange = (field: 'startDate' | 'endDate', value: string) => {
+    setDateRange(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const resetDateRange = () => {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setDateRange({ startDate, endDate });
   };
 
   const totalClicks = countryData.reduce((sum, country) => sum + country.clicks, 0);
@@ -192,6 +256,60 @@ export default function AnalyticsPage() {
               : 'Track your URL performance across the globe'
             }
           </p>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="mb-8 bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Filter className="h-5 w-5 mr-2 text-blue-600" />
+              Date Range Filter
+            </h2>
+            <button
+              onClick={resetDateRange}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Reset to Last 30 Days
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Date
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Date
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-end">
+              <div className="text-sm text-gray-600">
+                <p>Selected Range:</p>
+                <p className="font-medium">
+                  {new Date(dateRange.startDate).toLocaleDateString()} - {new Date(dateRange.endDate).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Admin: Team Member Click Stats */}
@@ -239,63 +357,63 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Admin: Team Total Clicks for Month */}
+        {/* Admin: Team Total Clicks for Month & Team Countries Overview side by side */}
         {user?.role === 'admin' && (
-          <div className="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <MousePointer className="h-6 w-6 mr-2 text-green-600" /> Team Total Clicks for {teamTotalClicksMonth?.monthName || 'Current Month'}
-            </h2>
-            {loadingAdminData ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading team analytics...</p>
-              </div>
-            ) : teamTotalClicksMonth ? (
-              <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  {teamTotalClicksMonth.totalClicks.toLocaleString()}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Team Total Clicks for Month */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <MousePointer className="h-6 w-6 mr-2 text-green-600" /> Team Total Clicks for {teamTotalClicksMonth?.monthName || 'Current Month'}
+              </h2>
+              {loadingAdminData ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading team analytics...</p>
                 </div>
-                <p className="text-gray-600">
-                  Total clicks for {teamTotalClicksMonth.monthName} {teamTotalClicksMonth.year}
-                </p>
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center">No team click data available for this month.</p>
-            )}
-          </div>
-        )}
-
-        {/* Admin: Team Countries Overview */}
-        {user?.role === 'admin' && (
-          <div className="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <Globe className="h-6 w-6 mr-2 text-purple-600" /> Team Countries Overview
-            </h2>
-            {loadingAdminData ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading team countries...</p>
-              </div>
-            ) : teamCountries.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teamCountries.slice(0, 6).map((country, index) => (
-                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{country.country}</p>
-                        <p className="text-sm text-gray-500">{country.countryCode}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-purple-600">{country.clicks}</p>
-                        <p className="text-sm text-gray-500">{country.percentage}%</p>
+              ) : teamTotalClicksMonth ? (
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-2">
+                    {teamTotalClicksMonth.totalClicks.toLocaleString()}
+                  </div>
+                  <p className="text-gray-600">
+                    Total clicks for {teamTotalClicksMonth.monthName} {teamTotalClicksMonth.year}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center">No team click data available for this month.</p>
+              )}
+            </div>
+            {/* Team Countries Overview */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Globe className="h-6 w-6 mr-2 text-purple-600" /> Team Countries Overview
+              </h2>
+              {loadingAdminData ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading team countries...</p>
+                </div>
+              ) : teamCountries.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {teamCountries.slice(0, 6).map((country, index) => (
+                    <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">{country.country}</p>
+                          <p className="text-sm text-gray-500">{country.countryCode}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-purple-600">{country.clicks}</p>
+                          <p className="text-sm text-gray-500">{country.percentage}%</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center">No team country data available.</p>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center">No team country data available.</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -404,309 +522,228 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Map and Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* World Map */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {user?.role === 'admin' ? 'Team Global Click Distribution' : 'My Global Click Distribution'}
-            </h2>
-            <div className="h-96 rounded-lg overflow-hidden">
-              {countryData.length === 0 ? (
-                <div className="h-full bg-gray-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">
-                      {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {user?.role === 'admin' 
-                        ? 'Team members need to share URLs to see analytics' 
-                        : 'Start sharing your URLs to see analytics'
-                      }
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <ComposableMap
-                  projection="geoEqualEarth"
-                  projectionConfig={{
-                    scale: 147,
-                    center: [0, 0]
-                  }}
-                >
-                  <ZoomableGroup>
-                    <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
-                      {({ geographies }) =>
-                        geographies.map((geo) => {
-                          const countryCode = geo.properties.ISO_A2;
-                          const countryInfo = countryData.find(c => c.countryCode === countryCode);
-                          const clickCount = countryInfo?.clicks || 0;
-                          const countryName = geo.properties.NAME || geo.properties.ADMIN || 'Unknown';
-                          
-                          // Debug log for countries with clicks
-                          if (clickCount > 0) {
-                            console.log('Country with clicks:', countryName, countryCode, clickCount);
-                          }
-                          
-                          return (
-                            <Geography
-                              key={geo.rsmKey}
-                              geography={geo}
-                              onClick={() => {
-                                if (countryInfo) {
-                                  setSelectedCountry(selectedCountry?.countryCode === countryCode ? null : countryInfo);
-                                }
-                              }}
-                              onMouseEnter={(evt) => {
-                                if (clickCount > 0) {
-                                  console.log('Mouse enter:', countryName, clickCount); // Debug log
-                                  setTooltip({
-                                    show: true,
-                                    content: `${countryName}: ${clickCount} click${clickCount !== 1 ? 's' : ''}`,
-                                    x: evt.clientX,
-                                    y: evt.clientY
-                                  });
-                                }
-                              }}
-                              onMouseLeave={() => {
-                                setTooltip({ show: false, content: '', x: 0, y: 0 });
-                              }}
-                              style={{
-                                default: {
-                                  fill: clickCount > 0 ? `rgba(59, 130, 246, ${Math.min(0.4 + (clickCount / Math.max(...countryData.map(c => c.clicks))) * 0.6, 1)})` : '#E5E7EB',
-                                  stroke: '#FFFFFF',
-                                  strokeWidth: 0.5,
-                                  outline: 'none',
-                                },
-                                hover: {
-                                  fill: clickCount > 0 ? '#3B82F6' : '#E5E7EB',
-                                  stroke: '#FFFFFF',
-                                  strokeWidth: 0.5,
-                                  outline: 'none',
-                                  cursor: clickCount > 0 ? 'pointer' : 'default',
-                                },
-                                pressed: {
-                                  fill: '#1D4ED8',
-                                  stroke: '#FFFFFF',
-                                  strokeWidth: 0.5,
-                                  outline: 'none',
-                                },
-                              }}
-                            />
-                          );
-                        })
-                      }
-                    </Geographies>
-                  </ZoomableGroup>
-                </ComposableMap>
-              )}
+        {/* World Map */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <MapPin className="h-6 w-6 mr-2 text-red-600" />
+            {user?.role === 'admin' ? 'Team Click Distribution' : 'My Click Distribution'}
+          </h2>
+          
+          {countryData.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                {user?.role === 'admin' 
+                  ? 'Team members need to share URLs to see analytics' 
+                  : 'Start sharing your URLs to see analytics'
+                }
+              </p>
             </div>
-            <div className="mt-4">
-              <div className="text-center mb-3">
-                <p className="text-sm text-gray-600">
-                  {countryData.length} {user?.role === 'admin' ? 'team countries' : 'countries'} with clicks detected
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hover over highlighted countries to see click counts
-                </p>
-              </div>
-              
-              {/* Color Legend */}
-              {countryData.length > 0 && (
-                <div className="bg-white p-3 rounded-lg border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2 text-center">Color Legend</p>
-                  <div className="flex items-center justify-center space-x-4 text-xs">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-gray-200 rounded border border-gray-300"></div>
-                      <span className="text-gray-600">No clicks</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-blue-300 rounded border border-blue-400"></div>
-                      <span className="text-gray-600">Low clicks</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-blue-600 rounded border border-blue-700"></div>
-                      <span className="text-gray-600">High clicks</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Tooltip */}
-            {tooltip.show && (
-              <div
-                className="fixed z-[9999] px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none border border-gray-700"
-                style={{
-                  left: Math.min(tooltip.x + 10, window.innerWidth - 200),
-                  top: Math.max(tooltip.y - 40, 10),
+          ) : (
+            <div className="relative">
+              <ComposableMap
+                projection="geoMercator"
+                projectionConfig={{
+                  scale: 147,
+                  center: [0, 0]
                 }}
               >
-                {tooltip.content}
-                <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Country List */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {user?.role === 'admin' ? 'Top Team Countries' : 'My Top Countries'}
-            </h2>
-            {countryData.length === 0 ? (
-              <div className="text-center py-8">
-                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {user?.role === 'admin' 
-                    ? 'Team members need to share URLs to see analytics' 
-                    : 'Start sharing your URLs to see analytics'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {countryData.slice(0, 10).map((country, index) => (
-                  <div
-                    key={country.countryCode}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                    onClick={() => setSelectedCountry(selectedCountry?.countryCode === country.countryCode ? null : country)}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
-                        {index + 1}
-                      </div>
-                      <div className="ml-3">
-                        <p className="font-medium text-gray-900">{country.country}</p>
-                        <p className="text-sm text-gray-500">{country.countryCode}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">{country.clicks.toLocaleString()}</p>
-                      <p className="text-sm text-gray-500">
-                        {((country.clicks / totalClicks) * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                <ZoomableGroup>
+                  <Geographies geography="/features.json">
+                    {({ geographies }) =>
+                      geographies.map((geo) => {
+                        const countryCode = geo.properties.ISO_A2;
+                        const countryName = geo.properties.NAME;
+                        const countryInfo = countryData.find(c => c.countryCode === countryCode);
+                        const clickCount = countryInfo?.clicks || 0;
+                        
+                        return (
+                          <Geography
+                            key={geo.rsmKey}
+                            geography={geo}
+                            onClick={() => {
+                              if (countryInfo) {
+                                setSelectedCountry(selectedCountry?.countryCode === countryCode ? null : countryInfo);
+                              }
+                            }}
+                            onMouseEnter={(evt) => {
+                              if (clickCount > 0) {
+                                console.log('Mouse enter:', countryName, clickCount); // Debug log
+                                setTooltip({
+                                  show: true,
+                                  content: `${countryName}: ${clickCount} click${clickCount !== 1 ? 's' : ''}`,
+                                  x: evt.clientX,
+                                  y: evt.clientY
+                                });
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              setTooltip({ show: false, content: '', x: 0, y: 0 });
+                            }}
+                            style={{
+                              default: {
+                                fill: clickCount > 0 ? '#3B82F6' : '#E5E7EB',
+                                stroke: '#FFFFFF',
+                                strokeWidth: 0.5,
+                                outline: 'none',
+                              },
+                              hover: {
+                                fill: clickCount > 0 ? '#2563EB' : '#D1D5DB',
+                                stroke: '#FFFFFF',
+                                strokeWidth: 0.5,
+                                outline: 'none',
+                              },
+                              pressed: {
+                                fill: clickCount > 0 ? '#1D4ED8' : '#9CA3AF',
+                                stroke: '#FFFFFF',
+                                strokeWidth: 0.5,
+                                outline: 'none',
+                              },
+                            }}
+                          />
+                        );
+                      })
+                    }
+                  </Geographies>
+                </ZoomableGroup>
+              </ComposableMap>
+              
+              {/* Tooltip */}
+              {tooltip.show && (
+                <div
+                  className="absolute z-10 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none"
+                  style={{
+                    left: tooltip.x + 10,
+                    top: tooltip.y - 10,
+                  }}
+                >
+                  {tooltip.content}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Admin: Top Team Countries with Cities */}
-        {user?.role === 'admin' && (
-          <div className="mt-8 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <MapPin className="h-6 w-6 mr-2 text-orange-600" /> Top Team Countries with Cities
-            </h2>
-            {loadingAdminData ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading top team countries...</p>
-              </div>
-            ) : topTeamCountries.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {topTeamCountries.map((country, index) => (
-                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-sm font-semibold text-orange-600">
-                          {index + 1}
-                        </div>
-                        <div className="ml-3">
-                          <p className="font-medium text-gray-900">{country.country}</p>
-                          <p className="text-sm text-gray-500">{country.countryCode}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-orange-600">{country.clicks}</p>
-                        <p className="text-sm text-gray-500">{country.percentage}%</p>
-                      </div>
-                    </div>
-                    
-                    {country.cities.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Top Cities:</p>
-                        <div className="space-y-1">
-                          {country.cities.slice(0, 3).map((city, cityIndex) => (
-                            <div key={city.city} className="flex justify-between items-center text-sm">
-                              <span className="text-gray-600">{city.city}</span>
-                              <span className="text-gray-500">{city.clicks} clicks</span>
-                            </div>
-                          ))}
-                          {country.cities.length > 3 && (
-                            <p className="text-xs text-gray-500">
-                              +{country.cities.length - 3} more cities
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center">No top team countries data available.</p>
-            )}
-          </div>
-        )}
-
-        {/* Detailed Country View */}
+        {/* Country Details */}
         {selectedCountry && (
-          <div className="mt-8 bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
                 {selectedCountry.country} ({selectedCountry.countryCode})
               </h2>
               <button
                 onClick={() => setSelectedCountry(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 text-2xl"
               >
                 ×
               </button>
             </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Cities */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Top Cities</h3>
-                {selectedCountry.cities.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedCountry.cities.slice(0, 5).map((city, index) => (
-                      <div key={city.city} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <span className="font-medium">{city.city}</span>
-                        <span className="text-sm text-gray-600">{city.clicks} clicks</span>
+                {selectedCountry.cities.length === 0 ? (
+                  <p className="text-gray-500">No city data available for this country.</p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {selectedCountry.cities.slice(0, 10).map((city, index) => (
+                      <div
+                        key={city.city}
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                            {index + 1}
+                          </div>
+                          <div className="ml-3">
+                            <p className="font-medium text-gray-900">{city.city}</p>
+                            <p className="text-sm text-gray-500">{selectedCountry.country}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-blue-600">{city.clicks}</p>
+                          <p className="text-sm text-gray-500">clicks</p>
+                        </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-gray-500">No city data available</p>
                 )}
               </div>
-
-              {/* IP Addresses */}
+              
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Recent IP Addresses</h3>
-                <div className="space-y-2">
-                  {selectedCountry.ipAddresses.slice(0, 5).map((ip, index) => (
-                    <div key={index} className="p-2 bg-gray-50 rounded font-mono text-sm">
-                      {ip}
-                    </div>
-                  ))}
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Statistics</h3>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-blue-600">Total Clicks</p>
+                    <p className="text-2xl font-bold text-blue-900">{selectedCountry.clicks.toLocaleString()}</p>
+                  </div>
+                  
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-green-600">Unique IP Addresses</p>
+                    <p className="text-2xl font-bold text-green-900">{selectedCountry.ipAddresses.length}</p>
+                  </div>
+                  
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-purple-600">Cities with Clicks</p>
+                    <p className="text-2xl font-bold text-purple-900">{selectedCountry.cities.length}</p>
+                  </div>
                 </div>
-                {selectedCountry.ipAddresses.length > 5 && (
-                  <p className="text-sm text-gray-500 mt-2">
-                    +{selectedCountry.ipAddresses.length - 5} more IPs
-                  </p>
-                )}
               </div>
             </div>
           </div>
         )}
+
+        {/* Top Countries List */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Globe className="h-6 w-6 mr-2 text-green-600" />
+            {user?.role === 'admin' ? 'Top Team Countries' : 'Top Countries'}
+          </h2>
+          
+          {countryData.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                {user?.role === 'admin' 
+                  ? 'Team members need to share URLs to see analytics' 
+                  : 'Start sharing your URLs to see analytics'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {countryData.slice(0, 10).map((country, index) => (
+                <div
+                  key={country.countryCode}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setSelectedCountry(selectedCountry?.countryCode === country.countryCode ? null : country)}
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                      {index + 1}
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-medium text-gray-900">{country.country}</p>
+                      <p className="text-sm text-gray-500">{country.countryCode}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-green-600">{country.clicks.toLocaleString()}</p>
+                    <p className="text-sm text-gray-500">
+                      {country.cities.length} cit{country.cities.length === 1 ? 'y' : 'ies'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

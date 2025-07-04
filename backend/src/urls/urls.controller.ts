@@ -184,13 +184,6 @@ export class UrlsController {
     @Request() req,
   ) {
     const url = await this.urlsService.findByShortCode(shortCode);
-    debugger;
-    // Get IP address and user agent
-    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-    const userAgent = req.get('User-Agent');
-    const referer = req.get('Referer');
-    
-    await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
     
     return {
       shortCode: url.shortCode,
@@ -200,6 +193,24 @@ export class UrlsController {
       clicks: url.clicks,
       createdAt: url.createdAt
     };
+  }
+
+  @Post('urls/increment/:shortCode')
+  @ApiOperation({ summary: 'Increment click count for URL' })
+  @ApiResponse({ status: 200, description: 'Click count incremented successfully' })
+  @ApiResponse({ status: 404, description: 'URL not found' })
+  async incrementClicks(
+    @Param('shortCode') shortCode: string,
+    @Request() req,
+  ) {
+    // Get IP address and user agent
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    const referer = req.get('Referer');
+    
+    await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
+    
+    return { success: true };
   }
 
   @Get('urls/user/:userId')

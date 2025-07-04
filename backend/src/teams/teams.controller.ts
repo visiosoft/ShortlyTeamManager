@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateRewardsDto } from './dto/update-rewards.dto';
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UrlsService } from '../urls/urls.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -13,6 +14,7 @@ export class TeamsController {
   constructor(
     private readonly teamsService: TeamsService,
     private readonly urlsService: UrlsService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   @Post('teams')
@@ -42,10 +44,23 @@ export class TeamsController {
   }
 
   @Get('teams/my-earnings')
-  async getMyEarnings(@Request() req) {
+  async getMyEarnings(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     const user = req.user;
-    // Get total clicks for the user
-    const totalClicks = await this.getUserTotalClicks(user.userId, user.teamId);
+    debugger;
+
+    // Get total clicks from analytics data with date filtering
+    const totalClicks = await this.getUserTotalClicksFromAnalytics(
+      user.userId, 
+      user.teamId, 
+      startDate, 
+      endDate
+    );
+    console.log(`User ${user.userId} has ${totalClicks} clicks in date range: ${startDate} to ${endDate}`);
+    
     return this.teamsService.calculateUserEarnings(user.userId, user.teamId, totalClicks);
   }
 
@@ -56,6 +71,21 @@ export class TeamsController {
       return totalClicks;
     } catch (error) {
       console.error('Error getting user total clicks:', error);
+      return 0;
+    }
+  }
+
+  private async getUserTotalClicksFromAnalytics(
+    userId: string, 
+    teamId: string, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<number> {
+    try {
+      const analytics = await this.analyticsService.getUserAnalytics(userId, teamId, startDate, endDate);
+      return analytics.length;
+    } catch (error) {
+      console.error('Error getting user total clicks from analytics:', error);
       return 0;
     }
   }

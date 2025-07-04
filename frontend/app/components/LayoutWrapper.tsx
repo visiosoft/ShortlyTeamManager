@@ -28,7 +28,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const isPublicPage = publicPages.includes(pathname || '');
   
   // Define pages that SHOULD have the sidebar (authenticated pages)
-  const authenticatedPages = ['/dashboard', '/analytics', '/team-members', '/rewards', '/direct-links', '/team-urls'];
+  const authenticatedPages = ['/dashboard', '/analytics', '/team-members', '/rewards', '/direct-links', '/team-urls', '/my-clicks', '/payment-info'];
   const isAuthenticatedPage = authenticatedPages.includes(pathname || '');
   
   // Check if this is a short URL redirect (pathname like /YbZ8wA, /abc123, etc.)
@@ -62,12 +62,12 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   };
   
   return (
-    <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex'} h-screen bg-gray-50`}>
+    <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex'} min-h-screen bg-gray-50`}>
       {/* Left Sidebar - Only show on authenticated pages */}
       {!isPublicPage && !isShortUrlRedirect && <Sidebar />}
       
       {/* Main Content */}
-      <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 flex flex-col overflow-hidden'}`}>
+      <div className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 flex flex-col'}`}>
         {/* Header with Logout Button - Only show on authenticated pages */}
         {!isPublicPage && !isShortUrlRedirect && (
           <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
@@ -78,6 +78,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
                   {pathname === '/analytics' && 'Analytics'}
                   {pathname === '/team-members' && 'Team Members'}
                   {pathname === '/rewards' && 'Rewards'}
+                  {pathname === '/my-clicks' && 'My Clicks'}
                 </h1>
               </div>
               
@@ -105,7 +106,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           </header>
         )}
         
-        <main className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 overflow-y-auto'}`}>
+        <main className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1'}`}>
           {children}
         </main>
       </div>
