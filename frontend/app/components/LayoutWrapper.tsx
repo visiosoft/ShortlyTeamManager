@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Sidebar from './Sidebar';
-import Footer from './Footer';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -109,9 +108,6 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
         <main className={`${isPublicPage || isShortUrlRedirect ? '' : 'flex-1 overflow-y-auto'}`}>
           {children}
         </main>
-        
-        {/* Footer - Only show on public pages, not on short URL redirects */}
-        {isPublicPage && <Footer />}
       </div>
     </div>
   );
