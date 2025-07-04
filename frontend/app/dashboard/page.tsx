@@ -328,7 +328,12 @@ export default function Dashboard() {
                   <p className="mt-1 text-sm text-red-600">{errors.originalUrl.message}</p>
                 )}
                 {createdUrl && (
-                  <p className="mt-1 text-sm text-green-600">✓ URL shortened successfully!</p>
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">✓ URL shortened successfully!</p>
+                    <p className="text-sm text-green-700 mt-1">
+                      Shortened URL: <span className="font-mono">{createdUrl}</span>
+                    </p>
+                  </div>
                 )}
               </div>
 
