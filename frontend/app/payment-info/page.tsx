@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { Save, DollarSign, CreditCard, TrendingUp } from 'lucide-react'
+import { Save, DollarSign, CreditCard, TrendingUp, Users, BarChart3 } from 'lucide-react'
 import apiClient from '@/lib/axios'
 import { api } from '@/lib/api'
 
@@ -46,6 +46,14 @@ interface FormData {
   currency: string
 }
 
+interface UserData {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: string
+}
+
 export default function PaymentInfoPage() {
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [payouts, setPayouts] = useState<Payout[]>([])
@@ -53,6 +61,8 @@ export default function PaymentInfoPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [user, setUser] = useState<UserData | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
 
   const {
@@ -66,9 +76,23 @@ export default function PaymentInfoPage() {
   const currency = watch('currency')
 
   useEffect(() => {
+    loadUserData()
     loadPaymentInfo()
     loadPayouts()
   }, [])
+
+  const loadUserData = () => {
+    try {
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const user = JSON.parse(userData)
+        setUser(user)
+        setIsAdmin(user.role === 'admin')
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
+    }
+  }
 
   const loadPaymentInfo = async () => {
     try {
@@ -152,10 +176,100 @@ export default function PaymentInfoPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Information</h1>
           <p className="text-gray-600">Add your bank details to receive payouts when you reach the threshold</p>
+          {isAdmin && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
+              <p className="font-medium">👑 Admin View</p>
+              <p className="text-sm">You have admin privileges. Viewing enhanced earnings information.</p>
+            </div>
+          )}
         </div>
 
-        {/* Earnings Summary */}
-        {paymentInfo && (
+        {/* Enhanced Earnings Summary for Admin */}
+        {paymentInfo && isAdmin && (
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+              Admin Earnings Overview
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                <p className="text-sm text-gray-600 mb-1">Total Earnings</p>
+                <p className="text-2xl font-bold text-blue-900">{paymentInfo.totalEarnings} {paymentInfo.currency}</p>
+                <p className="text-xs text-gray-500 mt-1">Lifetime earnings</p>
+              </div>
+              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                <p className="text-sm text-gray-600 mb-1">Paid Amount</p>
+                <p className="text-2xl font-bold text-green-900">{paymentInfo.paidAmount} {paymentInfo.currency}</p>
+                <p className="text-xs text-gray-500 mt-1">Already received</p>
+              </div>
+              <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl">
+                <p className="text-sm text-gray-600 mb-1">Pending Amount</p>
+                <p className="text-2xl font-bold text-yellow-900">{paymentInfo.pendingAmount} {paymentInfo.currency}</p>
+                <p className="text-xs text-gray-500 mt-1">Awaiting payout</p>
+              </div>
+              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                <p className="text-sm text-gray-600 mb-1">Threshold</p>
+                <p className="text-2xl font-bold text-purple-900">{paymentInfo.thresholdAmount} {paymentInfo.currency}</p>
+                <p className="text-xs text-gray-500 mt-1">Payout trigger</p>
+              </div>
+            </div>
+            
+            {/* Detailed Breakdown */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <h3 className="font-semibold text-gray-900 mb-3">Earnings Breakdown</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Total Clicks:</span>
+                    <span className="text-sm font-medium">Calculated from analytics</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Earnings per Click:</span>
+                    <span className="text-sm font-medium">{paymentInfo.totalEarnings > 0 ? (paymentInfo.totalEarnings / 1000).toFixed(2) : 0} {paymentInfo.currency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Payout Status:</span>
+                    <span className={`text-sm font-medium ${paymentInfo.isEligibleForPayout ? 'text-green-600' : 'text-yellow-600'}`}>
+                      {paymentInfo.isEligibleForPayout ? 'Eligible' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <h3 className="font-semibold text-gray-900 mb-3">Payout History</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Last Payout:</span>
+                    <span className="text-sm font-medium">
+                      {paymentInfo.lastPayoutDate ? new Date(paymentInfo.lastPayoutDate).toLocaleDateString() : 'None'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Last Amount:</span>
+                    <span className="text-sm font-medium">
+                      {paymentInfo.lastPayoutAmount ? `${paymentInfo.lastPayoutAmount} ${paymentInfo.currency}` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Total Payouts:</span>
+                    <span className="text-sm font-medium">{payouts.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {paymentInfo.isEligibleForPayout && (
+              <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                <p className="font-medium">🎉 You're eligible for payout!</p>
+                <p className="text-sm">Your pending amount ({paymentInfo.pendingAmount} {paymentInfo.currency}) has reached the threshold ({paymentInfo.thresholdAmount} {paymentInfo.currency}).</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Regular Earnings Summary for Non-Admin */}
+        {paymentInfo && !isAdmin && (
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <DollarSign className="h-5 w-5 mr-2 text-green-600" />

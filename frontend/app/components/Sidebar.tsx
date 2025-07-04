@@ -167,33 +167,8 @@ export default function Sidebar() {
               isActive={pathname === '/rewards'}
               disabled={user?.role !== 'admin'}
             />
-            <NavItem 
-              href="/payment-info" 
-              icon={<DollarSign className="w-4 h-4" />} 
-              label="Payment Info" 
-              isActive={pathname === '/payment-info'}
-            />
-            <NavItem 
-              href="/direct-links" 
-              icon={<LinkIcon className="w-4 h-4" />} 
-              label="Direct Links" 
-              isActive={pathname === '/direct-links'}
-              disabled={user?.role === 'admin'}
-            />
-            <NavItem 
-              href="/dashboard" 
-              icon={<LinkIcon className="w-4 h-4" />} 
-              label="Link-in-bio" 
-              isActive={false}
-              disabled={true}
-            />
-            <NavItem 
-              href="/dashboard" 
-              icon={<FileText className="w-4 h-4" />} 
-              label="Surveys" 
-              isActive={false}
-              disabled={true}
-            />
+           
+            
           </div>
         </div>
       </nav>

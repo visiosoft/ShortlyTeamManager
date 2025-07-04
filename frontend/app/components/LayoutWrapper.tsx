@@ -28,7 +28,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   const isPublicPage = publicPages.includes(pathname || '');
   
   // Define pages that SHOULD have the sidebar (authenticated pages)
-  const authenticatedPages = ['/dashboard', '/analytics', '/team-members', '/rewards', '/direct-links', '/team-urls', '/my-clicks', '/payment-info'];
+  const authenticatedPages = ['/dashboard', '/analytics', '/team-members', '/rewards', '/direct-links', '/team-urls', '/my-clicks', '/payment-info', '/admin/payouts'];
   const isAuthenticatedPage = authenticatedPages.includes(pathname || '');
   
   // Check if this is a short URL redirect (pathname like /YbZ8wA, /abc123, etc.)

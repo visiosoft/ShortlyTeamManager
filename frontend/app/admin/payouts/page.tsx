@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckCircle, DollarSign, Users, TrendingUp } from 'lucide-react'
+import apiClient from '@/lib/axios'
 import { api } from '@/lib/api'
 
 interface PaymentInfo {
   id: string
   userId: {
+    id: string
     firstName: string
     lastName: string
     email: string
@@ -31,6 +33,7 @@ interface PaymentInfo {
 interface Payout {
   id: string
   userId: {
+    id: string
     firstName: string
     lastName: string
     email: string
@@ -62,6 +65,8 @@ export default function AdminPayoutsPage() {
   const [processing, setProcessing] = useState(false)
   const [selectedUser, setSelectedUser] = useState<PaymentInfo | null>(null)
   const [showProcessModal, setShowProcessModal] = useState(false)
+  const [showBankDetailsModal, setShowBankDetailsModal] = useState(false)
+  const [selectedBankUser, setSelectedBankUser] = useState<PaymentInfo | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -79,17 +84,27 @@ export default function AdminPayoutsPage() {
 
   const loadData = async () => {
     try {
+      setLoading(true)
+      setError('')
+      
+      console.log('Loading admin payout data...')
+      
       const [paymentInfoResponse, eligibleResponse, payoutsResponse] = await Promise.all([
-        api.get('/payments/admin/team-payment-info'),
-        api.get('/payments/admin/eligible-payouts'),
-        api.get('/payments/admin/payouts'),
+        apiClient.get(api.payments.admin.teamPaymentInfo),
+        apiClient.get(api.payments.admin.eligiblePayouts),
+        apiClient.get(api.payments.admin.allPayouts),
       ])
+
+      console.log('Payment info response:', paymentInfoResponse.data)
+      console.log('Eligible payouts response:', eligibleResponse.data)
+      console.log('All payouts response:', payoutsResponse.data)
 
       setPaymentInfoList(paymentInfoResponse.data)
       setEligiblePayouts(eligibleResponse.data)
       setAllPayouts(payoutsResponse.data)
     } catch (error: any) {
-      setError('Failed to load payment data')
+      console.error('Error loading admin payout data:', error)
+      setError('Failed to load payment data: ' + (error.response?.data?.message || error.message))
     } finally {
       setLoading(false)
     }
@@ -102,6 +117,11 @@ export default function AdminPayoutsPage() {
     setShowProcessModal(true)
   }
 
+  const handleViewBankDetails = (user: PaymentInfo) => {
+    setSelectedBankUser(user)
+    setShowBankDetailsModal(true)
+  }
+
   const onSubmitPayout = async (data: ProcessPayoutForm) => {
     if (!selectedUser) return
 
@@ -110,7 +130,10 @@ export default function AdminPayoutsPage() {
     setSuccess('')
 
     try {
-      await api.post('/payments/admin/process-payout', {
+      console.log('Processing payout for user:', selectedUser.userId)
+      console.log('Payout data:', data)
+      
+      await apiClient.post(api.payments.admin.processPayout, {
         userId: selectedUser.userId.id || selectedUser.id,
         ...data,
       })
@@ -123,6 +146,7 @@ export default function AdminPayoutsPage() {
       // Reload data
       await loadData()
     } catch (error: any) {
+      console.error('Error processing payout:', error)
       setError(error.response?.data?.message || 'Failed to process payout')
     } finally {
       setProcessing(false)
@@ -131,8 +155,8 @@ export default function AdminPayoutsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="p-6">
+        <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading payment data...</p>
         </div>
@@ -141,30 +165,8 @@ export default function AdminPayoutsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-green-600 py-4 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">E</span>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              Earn Reward
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center space-x-8">
-            <button
-              onClick={() => window.history.back()}
-              className="text-white/90 hover:text-white transition-colors duration-200"
-            >
-              Back to Dashboard
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto py-8 px-4">
+    <div className="p-6">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Team Payout Management</h1>
           <p className="text-gray-600">Manage team members' payouts and bank information</p>
@@ -252,18 +254,18 @@ export default function AdminPayoutsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.userId.firstName} {user.userId.lastName}
+                            {user.userId?.firstName} {user.userId?.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{user.userId.email}</div>
+                          <div className="text-sm text-gray-500">{user.userId?.email}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.teamId.name}
+                        {user.teamId?.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           <div>{user.bankName}</div>
-                          <div className="text-gray-500">****{user.accountNumber.slice(-4)}</div>
+                          <div className="text-gray-500">****{user.accountNumber?.slice(-4)}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -275,12 +277,20 @@ export default function AdminPayoutsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleProcessPayout(user)}
-                          className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all"
-                        >
-                          Process Payout
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewBankDetails(user)}
+                            className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-all text-sm"
+                          >
+                            View Bank Details
+                          </button>
+                          <button
+                            onClick={() => handleProcessPayout(user)}
+                            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all"
+                          >
+                            Process Payout
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -326,18 +336,18 @@ export default function AdminPayoutsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {user.userId.firstName} {user.userId.lastName}
+                          {user.userId?.firstName} {user.userId?.lastName}
                         </div>
-                        <div className="text-sm text-gray-500">{user.userId.email}</div>
+                        <div className="text-sm text-gray-500">{user.userId?.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.teamId.name}
+                      {user.teamId?.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <div>{user.bankName}</div>
-                        <div className="text-gray-500">****{user.accountNumber.slice(-4)}</div>
+                        <div className="text-gray-500">****{user.accountNumber?.slice(-4)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -353,14 +363,22 @@ export default function AdminPayoutsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {user.isEligibleForPayout && (
+                      <div className="flex space-x-2">
                         <button
-                          onClick={() => handleProcessPayout(user)}
-                          className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all"
+                          onClick={() => handleViewBankDetails(user)}
+                          className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-all text-sm"
                         >
-                          Process Payout
+                          View Bank Details
                         </button>
-                      )}
+                        {user.isEligibleForPayout && (
+                          <button
+                            onClick={() => handleProcessPayout(user)}
+                            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all"
+                          >
+                            Process Payout
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -406,13 +424,13 @@ export default function AdminPayoutsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {payout.userId.firstName} {payout.userId.lastName}
+                            {payout.userId?.firstName} {payout.userId?.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{payout.userId.email}</div>
+                          <div className="text-sm text-gray-500">{payout.userId?.email}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payout.teamId.name}
+                        {payout.teamId?.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {payout.amount} {payout.currency}
@@ -447,9 +465,9 @@ export default function AdminPayoutsPage() {
           <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Process Payout</h3>
             <p className="text-sm text-gray-600 mb-6">
-              Process payout for {selectedUser.userId.firstName} {selectedUser.userId.lastName}
+              Process payout for {selectedUser.userId?.firstName} {selectedUser.userId?.lastName}
             </p>
-
+            
             <form onSubmit={handleSubmit(onSubmitPayout)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -485,25 +503,25 @@ export default function AdminPayoutsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  {...register('notes')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Transaction notes..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Transaction ID (Optional)
                 </label>
                 <input
                   {...register('transactionId')}
                   type="text"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., TXN123456"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  {...register('notes')}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Additional notes..."
+                  placeholder="TXN123456"
                 />
               </div>
 
@@ -515,19 +533,113 @@ export default function AdminPayoutsPage() {
                     setSelectedUser(null)
                     reset()
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={processing}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 text-white py-2 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-green-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {processing ? 'Processing...' : 'Process Payout'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Details Modal */}
+      {showBankDetailsModal && selectedBankUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Bank Details</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Complete bank information for {selectedBankUser.userId?.firstName} {selectedBankUser.userId?.lastName}
+            </p>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedBankUser.bankName}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded font-mono">{selectedBankUser.accountNumber}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedBankUser.accountHolderName}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedBankUser.currency}</p>
+                </div>
+                {selectedBankUser.branchCode && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Branch Code</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedBankUser.branchCode}</p>
+                  </div>
+                )}
+                {selectedBankUser.swiftCode && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded font-mono">{selectedBankUser.swiftCode}</p>
+                  </div>
+                )}
+                {selectedBankUser.iban && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded font-mono">{selectedBankUser.iban}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium text-gray-900 mb-2">Earnings Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Total Earnings</label>
+                    <p className="text-sm font-semibold text-gray-900">{selectedBankUser.totalEarnings} {selectedBankUser.currency}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Paid Amount</label>
+                    <p className="text-sm font-semibold text-green-600">{selectedBankUser.paidAmount} {selectedBankUser.currency}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Pending Amount</label>
+                    <p className="text-sm font-semibold text-blue-600">{selectedBankUser.pendingAmount} {selectedBankUser.currency}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-4 pt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBankDetailsModal(false)
+                  setSelectedBankUser(null)
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+              {selectedBankUser.isEligibleForPayout && (
+                <button
+                  onClick={() => {
+                    setShowBankDetailsModal(false)
+                    setSelectedBankUser(null)
+                    handleProcessPayout(selectedBankUser)
+                  }}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-green-700 transition-all"
+                >
+                  Process Payout
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
