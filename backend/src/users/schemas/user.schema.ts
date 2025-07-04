@@ -17,11 +17,14 @@ export class User {
   @Prop({ required: true, unique: true, index: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ required: function() { return !this.googleId; } })
   password: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Team', required: true })
   teamId: Types.ObjectId;
+
+  @Prop({ unique: true, sparse: true })
+  googleId?: string;
 
   @Prop({ default: 'user' })
   role: 'admin' | 'user';

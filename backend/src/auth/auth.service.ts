@@ -140,4 +140,77 @@ export class AuthService {
       role: savedUser.role,
     };
   }
+
+  async validateGoogleUser(profile: any): Promise<any> {
+    const { email, firstName, lastName, googleId } = profile;
+    
+    // Check if user exists with this Google ID
+    let user = await this.userModel.findOne({ googleId }).populate('teamId');
+    
+    if (!user) {
+      // Check if user exists with this email
+      user = await this.userModel.findOne({ email }).populate('teamId');
+      
+      if (user) {
+        // User exists but doesn't have Google ID, update it
+        user.googleId = googleId;
+        await user.save();
+      } else {
+        // Create new user with Google OAuth (only for regular users, not admins)
+        // Find a default team or create one for Google users
+        let defaultTeam = await this.teamModel.findOne({ name: 'Google Users' });
+        
+        if (!defaultTeam) {
+          defaultTeam = new this.teamModel({
+            name: 'Google Users',
+            description: 'Default team for Google OAuth users',
+          });
+          await defaultTeam.save();
+        }
+
+        user = new this.userModel({
+          email,
+          firstName,
+          lastName,
+          googleId,
+          teamId: defaultTeam._id,
+          role: 'user', // Google users are always regular users, not admins
+          isEmailVerified: true, // Google emails are verified
+        });
+        
+        await user.save();
+        user = await this.userModel.findById(user._id).populate('teamId');
+      }
+    }
+
+    // Update last login
+    await this.userModel.findByIdAndUpdate(user._id, { lastLoginAt: new Date() });
+
+    const { password, ...result } = user.toObject();
+    return result;
+  }
+
+  async googleLogin(profile: any) {
+    const user = await this.validateGoogleUser(profile);
+    
+    const payload = { 
+      email: user.email, 
+      sub: user._id, 
+      teamId: user.teamId._id,
+      role: user.role 
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        teamId: user.teamId._id,
+        team: user.teamId,
+      },
+    };
+  }
 } 
