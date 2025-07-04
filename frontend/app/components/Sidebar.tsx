@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LogOut, BarChart3, Users, Link, TrendingUp, DollarSign, FileText, Plus, Shield } from 'lucide-react';
+import Link from 'next/link';
+import { LogOut, BarChart3, Users, Link as LinkIcon, TrendingUp, DollarSign, FileText, Plus, Shield } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -46,10 +47,10 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white shadow-lg flex flex-col">
       {/* Logo/Brand */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">URL Shortener</h1>
+      <Link href="/" className="block p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors">
+        <h1 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">URL Shortener</h1>
         <p className="text-sm text-gray-600">Professional Link Management</p>
-      </div>
+      </Link>
 
       {/* User Profile Section */}
       <div className="p-4 border-b border-gray-200">
@@ -127,7 +128,7 @@ export default function Sidebar() {
             />
             <NavItem 
               href="/team-urls" 
-              icon={<Link className="w-4 h-4" />} 
+              icon={<LinkIcon className="w-4 h-4" />} 
               label="Create Team URL" 
               isActive={pathname === '/team-urls'}
               disabled={user?.role !== 'admin'}
@@ -153,14 +154,14 @@ export default function Sidebar() {
             />
             <NavItem 
               href="/direct-links" 
-              icon={<Link className="w-4 h-4" />} 
+              icon={<LinkIcon className="w-4 h-4" />} 
               label="Direct Links" 
               isActive={pathname === '/direct-links'}
               disabled={user?.role === 'admin'}
             />
             <NavItem 
               href="/dashboard" 
-              icon={<Link className="w-4 h-4" />} 
+              icon={<LinkIcon className="w-4 h-4" />} 
               label="Link-in-bio" 
               isActive={false}
               disabled={true}
