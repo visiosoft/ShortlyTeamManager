@@ -21,7 +21,6 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
       ...getAuthHeaders(),
       ...options.headers,
     },
-    credentials: 'include', // Include cookies for CORS
   };
 
   try {
