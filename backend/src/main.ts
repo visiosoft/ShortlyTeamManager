@@ -10,36 +10,17 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS - Allow specific production domains and all localhost
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:4000',
-    'https://shorly.uk',
-    'https://www.shorly.uk',
-    'https://shortlyapi.mypaperlessoffice.org',
-    'https://www.shortlyapi.mypaperlessoffice.org'
-  ];
-
+  // Enable CORS - Simplified configuration to prevent duplicate headers
   app.enableCors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl requests, etc.)
-      if (!origin) return callback(null, true);
-      
-      // Allow all localhost origins for development
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return callback(null, true);
-      }
-      
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      
-      // Allow all origins for now (you can restrict this later)
-      console.log('CORS allowing origin:', origin);
-      return callback(null, true);
-    },
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:4000',
+      'https://shorly.uk',
+      'https://www.shorly.uk',
+      'https://shortlyapi.mypaperlessoffice.org',
+      'https://www.shortlyapi.mypaperlessoffice.org'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -49,11 +30,7 @@ async function bootstrap() {
       'Origin', 
       'Accept',
       'Cache-Control',
-      'X-File-Name',
-      'Access-Control-Allow-Origin',
-      'Access-Control-Allow-Methods',
-      'Access-Control-Allow-Headers',
-      'Access-Control-Allow-Credentials'
+      'X-File-Name'
     ],
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   });
@@ -79,6 +56,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
-  console.log('CORS enabled for all origins (with logging)');
+  console.log('CORS enabled for specific origins');
 }
 bootstrap(); 
