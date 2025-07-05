@@ -11,21 +11,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Enable CORS - Allow all origins with wildcard
-  app.enableCors({
-    origin: '*', // Allow all origins
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
-      'X-Requested-With', 
-      'Origin', 
-      'Accept',
-      'Cache-Control',
-      'X-File-Name'
-    ],
-    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  });
+  
 
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
