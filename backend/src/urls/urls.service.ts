@@ -351,11 +351,14 @@ export class UrlsService {
       userId = url.userId ? url.userId.toString() : '';
     }
 
+    // Use production URL for shortened URLs
+    const baseUrl = process.env.BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://shorly.uk' : 'http://localhost:3000');
+
     return {
       id: url._id.toString(),
       originalUrl: url.originalUrl,
       shortCode: url.shortCode,
-      shortUrl: `${process.env.BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://shorly.uk' : 'http://localhost:3000')}/${url.shortCode}`,
+      shortUrl: `${baseUrl}/${url.shortCode}`,
       clicks: url.clicks,
       isActive: url.isActive,
       title: url.title,
