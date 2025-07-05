@@ -19,6 +19,10 @@
     "start:backend": "cd backend && npm run start:prod"
   },
   "devDependencies": {
+    "@types/d3-scale": "^4.0.9",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "d3-scale": "^4.0.2"
   }
-} 
+}

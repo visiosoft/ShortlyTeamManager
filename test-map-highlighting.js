@@ -2,8 +2,8 @@ const axios = require('axios');
 
 const BASE_URL = 'http://localhost:3009/api';
 
-async function testRealIPs() {
-  console.log('🔧 Testing with real IP addresses for map highlighting...\n');
+async function testMapHighlighting() {
+  console.log('🔧 Testing map highlighting with diverse country data...\n');
 
   try {
     // 1. Login
@@ -25,45 +25,39 @@ async function testRealIPs() {
     const urls = urlsResponse.data.urls;
     console.log(`✅ Found ${urls.length} URLs`);
 
-    // 3. Test with real IP addresses that should be recognized by geoip-lite
-    console.log('\n3. Testing with real IP addresses...');
+    // 3. Simulate clicks from different countries
+    console.log('\n3. Simulating clicks from different countries...');
     
-    const realIPs = [
-      { ip: '8.8.8.8', expectedCountry: 'US' }, // Google DNS
-      { ip: '1.1.1.1', expectedCountry: 'AU' }, // Cloudflare DNS
-      { ip: '208.67.222.222', expectedCountry: 'US' }, // OpenDNS
-      { ip: '9.9.9.9', expectedCountry: 'DE' }, // Quad9 DNS
-      { ip: '185.228.168.9', expectedCountry: 'GB' }, // CleanBrowsing
-      { ip: '76.76.19.56', expectedCountry: 'CA' }, // Alternate DNS
-      { ip: '94.140.14.14', expectedCountry: 'NL' }, // AdGuard DNS
-      { ip: '176.103.130.130', expectedCountry: 'CH' }, // AdGuard DNS
-      { ip: '8.8.4.4', expectedCountry: 'US' }, // Google DNS
-      { ip: '1.0.0.1', expectedCountry: 'AU' }, // Cloudflare DNS
-      { ip: '208.67.220.220', expectedCountry: 'US' }, // OpenDNS
-      { ip: '9.9.9.10', expectedCountry: 'DE' }, // Quad9 DNS
-      { ip: '185.228.169.9', expectedCountry: 'GB' }, // CleanBrowsing
-      { ip: '76.76.2.0', expectedCountry: 'CA' }, // Alternate DNS
-      { ip: '94.140.15.15', expectedCountry: 'NL' }, // AdGuard DNS
+    const testCountries = [
+      { country: 'United States', countryCode: 'US', ip: '8.8.8.8', clicks: 10 },
+      { country: 'United Kingdom', countryCode: 'GB', ip: '185.228.168.9', clicks: 8 },
+      { country: 'Germany', countryCode: 'DE', ip: '9.9.9.9', clicks: 6 },
+      { country: 'Canada', countryCode: 'CA', ip: '76.76.19.56', clicks: 5 },
+      { country: 'Australia', countryCode: 'AU', ip: '1.1.1.1', clicks: 4 },
+      { country: 'Netherlands', countryCode: 'NL', ip: '94.140.14.14', clicks: 3 },
+      { country: 'France', countryCode: 'FR', ip: '176.103.130.131', clicks: 7 },
+      { country: 'Spain', countryCode: 'ES', ip: '176.103.130.132', clicks: 4 },
+      { country: 'Italy', countryCode: 'IT', ip: '176.103.130.133', clicks: 3 },
+      { country: 'Japan', countryCode: 'JP', ip: '176.103.130.134', clicks: 9 },
+      { country: 'India', countryCode: 'IN', ip: '176.103.130.136', clicks: 12 },
+      { country: 'Brazil', countryCode: 'BR', ip: '176.103.130.137', clicks: 6 }
     ];
 
-    for (const url of urls.slice(0, 1)) { // Use first URL
+    for (const url of urls.slice(0, 2)) { // Use first 2 URLs
       console.log(`\nSimulating clicks for: ${url.shortCode}`);
       
-      for (let i = 0; i < realIPs.length; i++) {
-        const ipData = realIPs[i];
-        const clicks = Math.floor(Math.random() * 5) + 2; // 2-6 clicks per IP
+      for (const countryData of testCountries) {
+        console.log(`Adding ${countryData.clicks} clicks from ${countryData.country}...`);
         
-        console.log(`Adding ${clicks} clicks from IP ${ipData.ip} (expected: ${ipData.expectedCountry})...`);
-        
-        for (let j = 0; j < clicks; j++) {
+        for (let i = 0; i < countryData.clicks; i++) {
           try {
             await axios.post(`${BASE_URL}/urls/increment/${url.shortCode}`, {
-              ipAddress: ipData.ip,
+              ipAddress: countryData.ip,
               userAgent: 'Mozilla/5.0 (Test Browser)',
               referer: 'https://test.com'
             });
           } catch (error) {
-            console.log(`⚠️  Failed to add click for IP ${ipData.ip}: ${error.response?.data?.message || error.message}`);
+            console.log(`⚠️  Failed to add click for ${countryData.country}: ${error.response?.data?.message || error.message}`);
           }
         }
       }
@@ -102,4 +96,4 @@ async function testRealIPs() {
   }
 }
 
-testRealIPs(); 
+testMapHighlighting(); 

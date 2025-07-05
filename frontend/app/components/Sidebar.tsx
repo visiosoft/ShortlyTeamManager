@@ -47,7 +47,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white shadow-lg flex flex-col">
       {/* Logo/Brand */}
-      <Link href="/" className="block p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors">
+      <Link href="/dashboard" className="block p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors">
         <h1 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">URL Shortener</h1>
         <p className="text-sm text-gray-600">Professional Link Management</p>
       </Link>

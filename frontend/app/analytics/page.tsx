@@ -54,6 +54,39 @@ interface DateRange {
   endDate: string;
 }
 
+// Add this mapping at the top of the file (after imports)
+const iso2to3: Record<string, string> = {
+  PK: 'PAK', US: 'USA', GB: 'GBR', DE: 'DEU', CA: 'CAN', AU: 'AUS', NL: 'NLD', FR: 'FRA', ES: 'ESP', IT: 'ITA', JP: 'JPN', KR: 'KOR', IN: 'IND', BR: 'BRA', MX: 'MEX', CN: 'CHN', RU: 'RUS', // ... add more as needed
+};
+
+// Simple color scale function
+const getColorScale = (minClicks: number, maxClicks: number) => {
+  return (clicks: number) => {
+    if (clicks === 0) return '#f8fafc'; // Very light gray for no clicks
+    
+    if (maxClicks === minClicks) {
+      // If all countries have the same number of clicks, use a medium green
+      return '#10b981';
+    }
+    
+    // Create a vibrant green to red gradient for better visibility
+    const ratio = (clicks - minClicks) / (maxClicks - minClicks);
+    
+    // Use a green to red gradient for better visibility
+    if (ratio < 0.2) {
+      return '#dcfce7'; // Very light green for low clicks
+    } else if (ratio < 0.4) {
+      return '#86efac'; // Light green for low-medium clicks
+    } else if (ratio < 0.6) {
+      return '#22c55e'; // Medium green for medium clicks
+    } else if (ratio < 0.8) {
+      return '#16a34a'; // Dark green for high clicks
+    } else {
+      return '#15803d'; // Very dark green for very high clicks
+    }
+  };
+};
+
 export default function AnalyticsPage() {
   const [user, setUser] = useState<any>(null);
   const [countryData, setCountryData] = useState<CountryData[]>([]);
@@ -202,17 +235,14 @@ export default function AnalyticsPage() {
       const response = await apiClient.get(`${api.analytics.user(userId)}?${params}`);
       setMemberAnalytics(response.data);
     } catch (err) {
-      setMemberAnalytics([]);
+      console.error('Error fetching member analytics:', err);
     } finally {
       setLoadingMember(false);
     }
   };
 
   const handleDateRangeChange = (field: 'startDate' | 'endDate', value: string) => {
-    setDateRange(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setDateRange(prev => ({ ...prev, [field]: value }));
   };
 
   const resetDateRange = () => {
@@ -221,16 +251,30 @@ export default function AnalyticsPage() {
     setDateRange({ startDate, endDate });
   };
 
+  // Handle country click without zoom
+  const handleCountryClick = (countryInfo: CountryData | null) => {
+    if (countryInfo) {
+      setSelectedCountry(countryInfo);
+    } else {
+      setSelectedCountry(null);
+    }
+  };
+
+  // Calculate statistics
   const totalClicks = countryData.reduce((sum, country) => sum + country.clicks, 0);
   const uniqueCountries = countryData.length;
   const uniqueIPs = new Set(countryData.flatMap(country => country.ipAddresses)).size;
 
+  // Calculate min/max clicks for color scale
+  const minClicks = countryData.length > 0 ? Math.min(...countryData.map(c => c.clicks)) : 0;
+  const maxClicks = countryData.length > 0 ? Math.max(...countryData.map(c => c.clicks)) : 1;
+  const colorScale = getColorScale(minClicks, maxClicks);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -238,513 +282,512 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error}</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <p className="text-gray-600">
-            {user?.role === 'admin' 
-              ? 'Track your team\'s URL performance across the globe' 
-              : 'Track your URL performance across the globe'
-            }
-          </p>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+        <p className="text-gray-600">Track your URL performance and audience insights</p>
+      </div>
 
-        {/* Date Range Filter */}
-        <div className="mb-8 bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Filter className="h-5 w-5 mr-2 text-blue-600" />
-              Date Range Filter
-            </h2>
-            <button
-              onClick={resetDateRange}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Reset to Last 30 Days
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex items-end">
-              <div className="text-sm text-gray-600">
-                <p>Selected Range:</p>
-                <p className="font-medium">
-                  {new Date(dateRange.startDate).toLocaleDateString()} - {new Date(dateRange.endDate).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Admin: Team Member Click Stats */}
-        {user?.role === 'admin' && (
-          <div className="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="h-6 w-6 mr-2 text-blue-600" /> Team Member Clicks
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Clicks</th>
-                    <th className="px-4 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {teamStats.map((member) => (
-                    <tr key={member.userId} className="hover:bg-blue-50">
-                      <td className="px-4 py-2 font-medium text-gray-900">
-                        {member.user ? `${member.user.firstName} ${member.user.lastName}` : 'Unknown'}
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{member.user?.email || '-'}</td>
-                      <td className="px-4 py-2 text-gray-700">{member.user?.role || '-'}</td>
-                      <td className="px-4 py-2 text-blue-700 font-bold">{member.clicks}</td>
-                      <td className="px-4 py-2">
-                        <button
-                          className="text-blue-600 hover:underline text-sm"
-                          onClick={() => {
-                            setSelectedMember(member);
-                            fetchMemberAnalytics(member.userId);
-                          }}
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Admin: Team Total Clicks for Month & Team Countries Overview side by side */}
-        {user?.role === 'admin' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* Team Total Clicks for Month */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <MousePointer className="h-6 w-6 mr-2 text-green-600" /> Team Total Clicks for {teamTotalClicksMonth?.monthName || 'Current Month'}
-              </h2>
-              {loadingAdminData ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading team analytics...</p>
-                </div>
-              ) : teamTotalClicksMonth ? (
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">
-                    {teamTotalClicksMonth.totalClicks.toLocaleString()}
-                  </div>
-                  <p className="text-gray-600">
-                    Total clicks for {teamTotalClicksMonth.monthName} {teamTotalClicksMonth.year}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center">No team click data available for this month.</p>
-              )}
-            </div>
-            {/* Team Countries Overview */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Globe className="h-6 w-6 mr-2 text-purple-600" /> Team Countries Overview
-              </h2>
-              {loadingAdminData ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading team countries...</p>
-                </div>
-              ) : teamCountries.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4">
-                  {teamCountries.slice(0, 6).map((country, index) => (
-                    <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{country.country}</p>
-                          <p className="text-sm text-gray-500">{country.countryCode}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-purple-600">{country.clicks}</p>
-                          <p className="text-sm text-gray-500">{country.percentage}%</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center">No team country data available.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Member Analytics Modal/Section */}
-        {selectedMember && (
-          <div className="mb-8 bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {selectedMember.user ? `${selectedMember.user.firstName} ${selectedMember.user.lastName}` : 'User'}'s Clicks
-              </h2>
-              <button
-                onClick={() => {
-                  setSelectedMember(null);
-                  setMemberAnalytics([]);
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            {loadingMember ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading member analytics...</p>
-              </div>
-            ) : (
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Recent Clicks</h3>
-                {memberAnalytics.length === 0 ? (
-                  <p className="text-gray-500">No click data available for this user.</p>
-                ) : (
-                  <div className="overflow-x-auto max-h-64">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Short URL</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">City</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-100">
-                        {memberAnalytics.slice(0, 20).map((click, idx) => (
-                          <tr key={idx}>
-                            <td className="px-4 py-2 text-blue-700">
-                              {click.urlId?.shortCode || '-'}
-                            </td>
-                            <td className="px-4 py-2 font-mono text-xs">{click.ipAddress}</td>
-                            <td className="px-4 py-2">{click.country || '-'}</td>
-                            <td className="px-4 py-2">{click.city || '-'}</td>
-                            <td className="px-4 py-2 text-xs">{click.createdAt ? new Date(click.createdAt).toLocaleString() : '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <MousePointer className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  {user?.role === 'admin' ? 'Total Team Clicks' : 'My Total Clicks'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900">{totalClicks.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Globe className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  {user?.role === 'admin' ? 'Team Countries' : 'My Countries'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900">{uniqueCountries}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  {user?.role === 'admin' ? 'Team Unique IPs' : 'My Unique IPs'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900">{uniqueIPs}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* World Map */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <MapPin className="h-6 w-6 mr-2 text-red-600" />
-            {user?.role === 'admin' ? 'Team Click Distribution' : 'My Click Distribution'}
+      {/* Date Range Filter */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Calendar className="w-5 h-5 mr-2" />
+            Date Range Filter
           </h2>
-          
-          {countryData.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                {user?.role === 'admin' 
-                  ? 'Team members need to share URLs to see analytics' 
-                  : 'Start sharing your URLs to see analytics'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="relative">
-              <ComposableMap
-                projection="geoMercator"
-                projectionConfig={{
-                  scale: 147,
-                  center: [0, 0]
-                }}
-              >
-                <ZoomableGroup>
-                  <Geographies geography="/features.json">
-                    {({ geographies }) =>
-                      geographies.map((geo) => {
-                        const countryCode = geo.properties.ISO_A2;
-                        const countryName = geo.properties.NAME;
-                        const countryInfo = countryData.find(c => c.countryCode === countryCode);
-                        const clickCount = countryInfo?.clicks || 0;
-                        
-                        return (
-                          <Geography
-                            key={geo.rsmKey}
-                            geography={geo}
-                            onClick={() => {
-                              if (countryInfo) {
-                                setSelectedCountry(selectedCountry?.countryCode === countryCode ? null : countryInfo);
-                              }
-                            }}
-                            onMouseEnter={(evt) => {
-                              if (clickCount > 0) {
-                                console.log('Mouse enter:', countryName, clickCount); // Debug log
-                                setTooltip({
-                                  show: true,
-                                  content: `${countryName}: ${clickCount} click${clickCount !== 1 ? 's' : ''}`,
-                                  x: evt.clientX,
-                                  y: evt.clientY
-                                });
-                              }
-                            }}
-                            onMouseLeave={() => {
-                              setTooltip({ show: false, content: '', x: 0, y: 0 });
-                            }}
-                            style={{
-                              default: {
-                                fill: clickCount > 0 ? '#3B82F6' : '#E5E7EB',
-                                stroke: '#FFFFFF',
-                                strokeWidth: 0.5,
-                                outline: 'none',
-                              },
-                              hover: {
-                                fill: clickCount > 0 ? '#2563EB' : '#D1D5DB',
-                                stroke: '#FFFFFF',
-                                strokeWidth: 0.5,
-                                outline: 'none',
-                              },
-                              pressed: {
-                                fill: clickCount > 0 ? '#1D4ED8' : '#9CA3AF',
-                                stroke: '#FFFFFF',
-                                strokeWidth: 0.5,
-                                outline: 'none',
-                              },
-                            }}
-                          />
-                        );
-                      })
-                    }
-                  </Geographies>
-                </ZoomableGroup>
-              </ComposableMap>
-              
-              {/* Tooltip */}
-              {tooltip.show && (
-                <div
-                  className="absolute z-10 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none"
-                  style={{
-                    left: tooltip.x + 10,
-                    top: tooltip.y - 10,
-                  }}
-                >
-                  {tooltip.content}
-                </div>
-              )}
-            </div>
-          )}
+          <button
+            onClick={resetDateRange}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Reset to Last 30 Days
+          </button>
         </div>
-
-        {/* Country Details */}
-        {selectedCountry && (
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {selectedCountry.country} ({selectedCountry.countryCode})
-              </h2>
-              <button
-                onClick={() => setSelectedCountry(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Top Cities</h3>
-                {selectedCountry.cities.length === 0 ? (
-                  <p className="text-gray-500">No city data available for this country.</p>
-                ) : (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {selectedCountry.cities.slice(0, 10).map((city, index) => (
-                      <div
-                        key={city.city}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
-                            {index + 1}
-                          </div>
-                          <div className="ml-3">
-                            <p className="font-medium text-gray-900">{city.city}</p>
-                            <p className="text-sm text-gray-500">{selectedCountry.country}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">{city.clicks}</p>
-                          <p className="text-sm text-gray-500">clicks</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Statistics</h3>
-                <div className="space-y-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-blue-600">Total Clicks</p>
-                    <p className="text-2xl font-bold text-blue-900">{selectedCountry.clicks.toLocaleString()}</p>
-                  </div>
-                  
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-green-600">Unique IP Addresses</p>
-                    <p className="text-2xl font-bold text-green-900">{selectedCountry.ipAddresses.length}</p>
-                  </div>
-                  
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-purple-600">Cities with Clicks</p>
-                    <p className="text-2xl font-bold text-purple-900">{selectedCountry.cities.length}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-        )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
 
-        {/* Top Countries List */}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <Globe className="h-6 w-6 mr-2 text-green-600" />
-            {user?.role === 'admin' ? 'Top Team Countries' : 'Top Countries'}
-          </h2>
-          
-          {countryData.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                {user?.role === 'admin' ? 'No team click data available yet' : 'No click data available yet'}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                {user?.role === 'admin' 
-                  ? 'Team members need to share URLs to see analytics' 
-                  : 'Start sharing your URLs to see analytics'
-                }
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <MousePointer className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Clicks</p>
+              <p className="text-2xl font-bold text-gray-900">{totalClicks.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Globe className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Countries</p>
+              <p className="text-2xl font-bold text-gray-900">{uniqueCountries}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Users className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Unique IPs</p>
+              <p className="text-2xl font-bold text-gray-900">{uniqueIPs}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Avg. Clicks</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {uniqueCountries > 0 ? Math.round(totalClicks / uniqueCountries) : 0}
               </p>
             </div>
-          ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {countryData.slice(0, 10).map((country, index) => (
-                <div
-                  key={country.countryCode}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedCountry(selectedCountry?.countryCode === country.countryCode ? null : country)}
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
-                      {index + 1}
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium text-gray-900">{country.country}</p>
-                      <p className="text-sm text-gray-500">{country.countryCode}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">{country.clicks.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">
-                      {country.cities.length} cit{country.cities.length === 1 ? 'y' : 'ies'}
-                    </p>
-                  </div>
-                </div>
-              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* World Map */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Globe className="w-6 h-6 mr-2" />
+            Team Click Distribution
+          </h2>
+        </div>
+        
+        <div className="relative">
+          <ComposableMap
+            projection="geoEqualEarth"
+            projectionConfig={{ scale: 200, center: [0, 20] }}
+            style={{ height: '500px' }}
+          >
+            <Geographies geography="/world-countries.json">
+              {({ geographies }) =>
+                geographies.map((geo) => {
+                  const countryCode3 = geo.id;
+                  // Find the analytics data using 3-letter code
+                  const countryInfo = countryData.find(c => iso2to3[c.countryCode] === countryCode3);
+                  const clickCount = countryInfo?.clicks || 0;
+                  const isSelected = selectedCountry && iso2to3[selectedCountry.countryCode] === countryCode3;
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      onClick={() => {
+                        if (countryInfo) {
+                          handleCountryClick(isSelected ? null : countryInfo);
+                        }
+                      }}
+                      onMouseEnter={(evt) => {
+                        if (clickCount > 0) {
+                          setTooltip({
+                            show: true,
+                            content: `${geo.properties.name}: ${clickCount} click${clickCount !== 1 ? 's' : ''} • ${countryInfo?.cities.length || 0} cities • ${countryInfo?.ipAddresses.length || 0} IPs`,
+                            x: evt.clientX,
+                            y: evt.clientY
+                          });
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        setTooltip({ show: false, content: '', x: 0, y: 0 });
+                      }}
+                      style={{
+                        default: {
+                          fill: colorScale(clickCount),
+                          stroke: isSelected ? '#f59e42' : '#fff',
+                          strokeWidth: isSelected ? 2 : 0.5,
+                          outline: 'none',
+                          cursor: clickCount > 0 ? 'pointer' : 'default',
+                        },
+                        hover: {
+                          fill: colorScale(clickCount),
+                          stroke: '#f59e42',
+                          strokeWidth: 2,
+                          outline: 'none',
+                          cursor: clickCount > 0 ? 'pointer' : 'default',
+                        },
+                        pressed: {
+                          fill: colorScale(clickCount),
+                          stroke: '#f59e42',
+                          strokeWidth: 2,
+                          outline: 'none',
+                          cursor: clickCount > 0 ? 'pointer' : 'default',
+                        },
+                      }}
+                    />
+                  );
+                })
+              }
+            </Geographies>
+          </ComposableMap>
+          
+          {/* Map Legend */}
+          <div className="absolute right-0 top-0 bg-white bg-opacity-95 rounded-lg shadow-lg p-4 mt-4 mr-4 z-10 flex flex-col items-center border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-800 mb-3">Click Distribution</h4>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#f8fafc' }} />
+              <span className="text-xs text-gray-700">No clicks</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#dcfce7' }} />
+              <span className="text-xs text-gray-700">Very low clicks</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#86efac' }} />
+              <span className="text-xs text-gray-700">Low clicks</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#22c55e' }} />
+              <span className="text-xs text-gray-700">Medium clicks</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#16a34a' }} />
+              <span className="text-xs text-gray-700">High clicks</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <div className="w-4 h-4 mr-2 rounded border border-gray-300" style={{ background: '#15803d' }} />
+              <span className="text-xs text-gray-700">Very high clicks</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-2 font-medium">Interactive World Map</div>
+          </div>
+          
+          {/* Tooltip */}
+          {tooltip.show && (
+            <div
+              className="fixed z-50 px-3 py-2 bg-white border border-gray-300 rounded shadow text-xs pointer-events-none"
+              style={{ left: tooltip.x + 10, top: tooltip.y + 10 }}
+            >
+              {tooltip.content}
             </div>
           )}
         </div>
       </div>
+
+      {/* Selected Country Details */}
+      {selectedCountry && (
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {selectedCountry.country} ({selectedCountry.countryCode})
+            </h2>
+            <button
+              onClick={() => setSelectedCountry(null)}
+              className="text-gray-400 hover:text-gray-600 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Top Cities</h3>
+              {selectedCountry.cities.length === 0 ? (
+                <p className="text-gray-500">No city data available for this country.</p>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {selectedCountry.cities.slice(0, 10).map((city, index) => (
+                    <div
+                      key={city.city}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                          {index + 1}
+                        </div>
+                        <div className="ml-3">
+                          <p className="font-medium text-gray-900">{city.city}</p>
+                          <p className="text-sm text-gray-500">{selectedCountry.country}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-blue-600">{city.clicks}</p>
+                        <p className="text-sm text-gray-500">clicks</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Statistics</h3>
+              <div className="space-y-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-blue-600">Total Clicks</p>
+                  <p className="text-2xl font-bold text-blue-900">{selectedCountry.clicks.toLocaleString()}</p>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-green-600">Unique IP Addresses</p>
+                  <p className="text-2xl font-bold text-green-900">{selectedCountry.ipAddresses.length}</p>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-purple-600">Cities with Clicks</p>
+                  <p className="text-2xl font-bold text-purple-900">{selectedCountry.cities.length}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* IP Addresses Section */}
+            <div className="col-span-1 md:col-span-2">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">IP Addresses</h3>
+              {selectedCountry.ipAddresses.length === 0 ? (
+                <p className="text-gray-500">No IP address data available for this country.</p>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {selectedCountry.ipAddresses.map((ip, index) => (
+                      <div
+                        key={index}
+                        className="bg-white rounded border p-2 text-sm font-mono text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        title={`IP Address ${index + 1}`}
+                      >
+                        {ip}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Showing {selectedCountry.ipAddresses.length} unique IP addresses
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Countries List */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <MapPin className="w-6 h-6 mr-2" />
+            Top Countries
+          </h2>
+        </div>
+        
+        {countryData.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No country data available.</p>
+        ) : (
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {countryData.slice(0, 10).map((country, index) => (
+              <div
+                key={country.countryCode}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                onClick={() => setSelectedCountry(selectedCountry?.countryCode === country.countryCode ? null : country)}
+              >
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                    {index + 1}
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">{country.country}</p>
+                    <p className="text-sm text-gray-500">{country.countryCode}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600">{country.clicks.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">
+                    {country.cities.length} cit{country.cities.length === 1 ? 'y' : 'ies'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Admin Analytics Section */}
+      {user?.role === 'admin' && (
+        <>
+          {/* Team Total Clicks for Current Month */}
+          {teamTotalClicksMonth && (
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Total Clicks - {teamTotalClicksMonth.monthName} {teamTotalClicksMonth.year}</h2>
+              <div className="bg-blue-50 rounded-lg p-6">
+                <p className="text-sm font-medium text-blue-600">Total Clicks</p>
+                <p className="text-4xl font-bold text-blue-900">{teamTotalClicksMonth.totalClicks.toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Team Countries */}
+          {teamCountries.length > 0 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Countries</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teamCountries.map((country, index) => (
+                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{country.country}</p>
+                        <p className="text-sm text-gray-500">{country.countryCode}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-blue-600">{country.clicks}</p>
+                        <p className="text-sm text-gray-500">{country.percentage.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Team Countries */}
+          {topTeamCountries.length > 0 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Top Team Countries</h2>
+              <div className="space-y-4">
+                {topTeamCountries.map((country, index) => (
+                  <div key={country.countryCode} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                          {index + 1}
+                        </div>
+                        <div className="ml-3">
+                          <p className="font-medium text-gray-900">{country.country}</p>
+                          <p className="text-sm text-gray-500">{country.countryCode}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-green-600">{country.clicks}</p>
+                        <p className="text-sm text-gray-500">{country.percentage.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                    {country.cities.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Top Cities:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {country.cities.slice(0, 5).map((city, cityIndex) => (
+                            <span
+                              key={cityIndex}
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                            >
+                              {city.city} ({city.clicks})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Team Member Stats */}
+          {teamStats.length > 0 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Member Performance</h2>
+              <div className="space-y-4">
+                {teamStats.map((member, index) => (
+                  <div
+                    key={member.userId}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      if (selectedMember?.userId === member.userId) {
+                        setSelectedMember(null);
+                        setMemberAnalytics([]);
+                      } else {
+                        setSelectedMember(member);
+                        fetchMemberAnalytics(member.userId);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm font-semibold text-green-600">
+                        {index + 1}
+                      </div>
+                      <div className="ml-3">
+                        <p className="font-medium text-gray-900">
+                          {member.user?.firstName} {member.user?.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500">{member.user?.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600">{member.clicks}</p>
+                      <p className="text-sm text-gray-500">clicks</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Selected Member Analytics */}
+              {selectedMember && memberAnalytics.length > 0 && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    {selectedMember.user?.firstName} {selectedMember.user?.lastName} - Recent Clicks
+                  </h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {memberAnalytics.slice(0, 10).map((click, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                        <div>
+                          <p className="font-medium text-gray-900">{click.urlId?.shortCode}</p>
+                          <p className="text-sm text-gray-500">{click.ipAddress}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">{click.country || 'Unknown'}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(click.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 } 
