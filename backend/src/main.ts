@@ -10,17 +10,9 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS - Simplified configuration to prevent duplicate headers
+  // Enable CORS - Allow all origins with wildcard
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:4000',
-      'https://shorly.uk',
-      'https://www.shorly.uk',
-      'https://shortlyapi.mypaperlessoffice.org',
-      'https://www.shortlyapi.mypaperlessoffice.org'
-    ],
+    origin: '*', // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -56,6 +48,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
-  console.log('CORS enabled for specific origins');
+  console.log('CORS enabled for all origins (*)');
 }
 bootstrap(); 
