@@ -18,6 +18,12 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false // Must be false when origin is '*'
   });
+  app.use((req, res, next) => {
+    res.on('finish', () => {
+      console.log(`Response headers for ${req.url}:`, res.getHeaders());
+    });
+    next();
+  });
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
