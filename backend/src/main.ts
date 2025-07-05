@@ -12,7 +12,12 @@ async function bootstrap() {
 
   // Enable CORS - Allow all origins with wildcard
   
-
+  app.enableCors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false // Must be false when origin is '*'
+  });
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
