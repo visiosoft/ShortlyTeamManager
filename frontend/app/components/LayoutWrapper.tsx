@@ -79,6 +79,10 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
                   {pathname === '/team-members' && 'Team Members'}
                   {pathname === '/rewards' && 'Rewards'}
                   {pathname === '/my-clicks' && 'My Clicks'}
+                  {pathname === '/payment-info' && 'Payment Info'}
+                  {pathname === '/direct-links' && 'Direct Links'}
+                  {pathname === '/team-urls' && 'Team URLs'}
+                  {pathname === '/admin/payouts' && 'Payout Management'}
                 </h1>
               </div>
               

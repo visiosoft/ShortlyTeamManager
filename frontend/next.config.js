@@ -8,9 +8,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'production' 
-              ? 'https://shorly.uk' 
-              : 'http://localhost:3000',
+            value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -18,7 +16,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control',
+            value: 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control, Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers, Access-Control-Allow-Credentials',
           },
           {
             key: 'Access-Control-Allow-Credentials',

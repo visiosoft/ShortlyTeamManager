@@ -10,27 +10,9 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS with specific origins
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:4000',
-    'https://shorly.uk',
-    'https://www.shorly.uk',
-  ];
-
+  // Enable CORS - Allow all origins
   app.enableCors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log('CORS blocked origin:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -40,7 +22,11 @@ async function bootstrap() {
       'Origin', 
       'Accept',
       'Cache-Control',
-      'X-File-Name'
+      'X-File-Name',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Methods',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Credentials'
     ],
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   });
@@ -66,6 +52,6 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
-  console.log('CORS enabled for origins:', allowedOrigins);
+  console.log('CORS enabled for all origins');
 }
 bootstrap(); 
