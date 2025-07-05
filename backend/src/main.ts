@@ -11,19 +11,20 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Enable CORS - Allow all origins with wildcard
-  
   app.enableCors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false // Must be false when origin is '*'
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept', 'Cache-Control'],
+    credentials: false // No credentials needed since we use JWT tokens
   });
+
   app.use((req, res, next) => {
     res.on('finish', () => {
       console.log(`Response headers for ${req.url}:`, res.getHeaders());
     });
     next();
   });
+
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
