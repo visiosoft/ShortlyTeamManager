@@ -8,6 +8,7 @@ import { Team, TeamDocument } from '../teams/schemas/team.schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CreateTeamDto } from '../teams/dto/create-team.dto';
+import { ReferralsService } from '../referrals/referrals.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
     private jwtService: JwtService,
+    private referralsService: ReferralsService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -87,23 +89,125 @@ export class AuthService {
 
     const savedUser = await user.save();
 
+    // Generate unique referral code for the user
+    await this.referralsService.generateUserReferralCode(savedUser._id.toString());
+
+    // Reload the user to get the updated referral code
+    const updatedUser = await this.userModel.findById(savedUser._id);
+
     const payload = { 
-      email: savedUser.email, 
-      sub: savedUser._id, 
+      email: updatedUser.email, 
+      sub: updatedUser._id, 
       teamId: savedTeam._id,
-      role: savedUser.role 
+      role: updatedUser.role 
     };
 
     return {
       access_token: this.jwtService.sign(payload),
       user: {
-        id: savedUser._id,
-        email: savedUser.email,
-        firstName: savedUser.firstName,
-        lastName: savedUser.lastName,
-        role: savedUser.role,
+        id: updatedUser._id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
         teamId: savedTeam._id,
         team: savedTeam,
+        referralCode: updatedUser.referralCode,
+      },
+    };
+  }
+
+  async registerWithReferral(registerDto: any) {
+    const { email, password, firstName, lastName, referralCode } = registerDto;
+
+    // Check if user already exists
+    const existingUser = await this.userModel.findOne({ email });
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Validate referral code and get the referring team or user
+    let referringTeam = null;
+    let referringUser = null;
+    
+    if (referralCode) {
+      try {
+        // First try to find a user with this referral code
+        referringUser = await this.referralsService.getUserByReferralCode(referralCode);
+        // Get the team from the referring user
+        referringTeam = await this.teamModel.findById(referringUser.teamId);
+      } catch (error) {
+        // If no user found, try to find a team with this referral code
+        try {
+          referringTeam = await this.referralsService.getTeamByReferralCode(referralCode);
+        } catch (teamError) {
+          throw new ConflictException('Invalid referral code');
+        }
+      }
+    } else {
+      throw new ConflictException('Referral code is required for this registration method');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user as a member of the referring team (not admin)
+    const user = new this.userModel({
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      teamId: referringTeam._id,
+      role: 'user', // User joins as regular member, not admin
+      referredBy: referringTeam._id, // Track who referred this user
+    });
+
+    const savedUser = await user.save();
+
+    // Generate unique referral code for the new user
+    await this.referralsService.generateUserReferralCode(savedUser._id.toString());
+
+    // Reload the user to get the updated referral code
+    const updatedUser = await this.userModel.findById(savedUser._id);
+
+    // Process referral bonuses
+    try {
+      console.log(`Processing referral signup for user ${savedUser._id} with referral code ${referralCode}`);
+      console.log(`User ID type: ${typeof savedUser._id}, User ID value: ${savedUser._id}`);
+      console.log(`Referral code type: ${typeof referralCode}, Referral code value: ${referralCode}`);
+      
+      await this.referralsService.processReferralSignup(
+        savedUser._id.toString(),
+        referralCode,
+        1000, // Signup bonus
+        500   // Referral bonus
+      );
+      console.log('Referral processing completed successfully');
+    } catch (error) {
+      console.error('Referral processing failed:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      // Don't fail registration if referral processing fails
+    }
+
+    const payload = { 
+      email: updatedUser.email, 
+      sub: updatedUser._id, 
+      teamId: referringTeam._id,
+      role: updatedUser.role 
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role,
+        teamId: referringTeam._id,
+        team: referringTeam,
+        referralCode: updatedUser.referralCode,
       },
     };
   }
@@ -132,12 +236,19 @@ export class AuthService {
 
     const savedUser = await user.save();
 
+    // Generate unique referral code for the new team member
+    await this.referralsService.generateUserReferralCode(savedUser._id.toString());
+
+    // Reload the user to get the updated referral code
+    const updatedUser = await this.userModel.findById(savedUser._id);
+
     return {
-      id: savedUser._id,
-      email: savedUser.email,
-      firstName: savedUser.firstName,
-      lastName: savedUser.lastName,
-      role: savedUser.role,
+      id: updatedUser._id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      role: updatedUser.role,
+      referralCode: updatedUser.referralCode,
     };
   }
 
@@ -179,6 +290,10 @@ export class AuthService {
         });
         
         await user.save();
+        
+        // Generate unique referral code for the new Google user
+        await this.referralsService.generateUserReferralCode(user._id.toString());
+        
         user = await this.userModel.findById(user._id).populate('teamId');
       }
     }

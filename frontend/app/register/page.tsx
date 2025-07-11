@@ -12,18 +12,22 @@ interface RegisterData {
   password: string
   firstName: string
   lastName: string
-  teamName: string
+  teamName?: string
   teamDescription?: string
+  referralCode?: string
 }
 
 export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
+    const refParam = searchParams.get('ref')
+    
     if (errorParam) {
       switch (errorParam) {
         case 'google_auth_failed':
@@ -39,6 +43,10 @@ export default function Register() {
           setError('An error occurred during authentication.')
       }
     }
+    
+    if (refParam) {
+      setReferralCode(refParam)
+    }
   }, [searchParams])
 
   const {
@@ -52,10 +60,38 @@ export default function Register() {
     setError('')
     
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/register`,
-        data
-      )
+      let response;
+      
+      if (referralCode) {
+        // Registration with referral - user joins existing team
+        const registrationData = {
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          referralCode: referralCode
+        }
+        
+        response = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/register-with-referral`,
+          registrationData
+        )
+      } else {
+        // Regular registration - user creates new team
+        const registrationData = {
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          teamName: data.teamName,
+          teamDescription: data.teamDescription
+        }
+        
+        response = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/auth/register`,
+          registrationData
+        )
+      }
       
       // Store token and user data
       localStorage.setItem('token', response.data.access_token)
@@ -190,33 +226,65 @@ export default function Register() {
               )}
             </div>
 
-            <div>
-              <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-2">
-                Team Name
-              </label>
-              <input
-                {...register('teamName', { required: 'Team name is required' })}
-                type="text"
-                id="teamName"
-                placeholder="My Awesome Team"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {errors.teamName && (
-                <p className="mt-1 text-sm text-red-600">{errors.teamName.message}</p>
-              )}
-            </div>
+            {!referralCode && (
+              <>
+                <div>
+                  <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Team Name
+                  </label>
+                  <input
+                    {...register('teamName', { required: !referralCode ? 'Team name is required' : false })}
+                    type="text"
+                    id="teamName"
+                    placeholder="My Awesome Team"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {errors.teamName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.teamName.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                    Team Description (Optional)
+                  </label>
+                  <textarea
+                    {...register('teamDescription')}
+                    id="teamDescription"
+                    placeholder="Describe your team's purpose..."
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </>
+            )}
+
+            {referralCode && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <strong>Referral Code Applied:</strong> {referralCode}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  You'll join the referring team and receive 1000 PKR bonus upon successful registration!
+                </p>
+              </div>
+            )}
 
             <div>
-              <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                Team Description (Optional)
+              <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-2">
+                Referral Code (Optional)
               </label>
-              <textarea
-                {...register('teamDescription')}
-                id="teamDescription"
-                placeholder="Describe your team's purpose..."
-                rows={3}
+              <input
+                type="text"
+                id="referralCode"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                placeholder="Enter referral code..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Have a referral code? Enter it to join the team and get 1000 PKR bonus!
+              </p>
             </div>
 
             <button

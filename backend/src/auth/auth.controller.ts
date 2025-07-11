@@ -21,6 +21,11 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Post('auth/register-with-referral')
+  async registerWithReferral(@Body() registerDto: any) {
+    return this.authService.registerWithReferral(registerDto);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('auth/team-member')
   async createTeamMember(@Body() createTeamMemberDto: CreateTeamMemberDto, @Request() req) {

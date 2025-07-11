@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, BarChart3, Users, Link as LinkIcon, TrendingUp, DollarSign, FileText, Plus, Shield, CreditCard } from 'lucide-react';
+import { LogOut, BarChart3, Users, Link as LinkIcon, TrendingUp, DollarSign, FileText, Plus, Shield, CreditCard, Share2 } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -172,6 +172,12 @@ export default function Sidebar() {
               icon={<CreditCard className="w-4 h-4" />} 
               label="Payment Info" 
               isActive={pathname === '/payment-info'}
+            />
+            <NavItem 
+              href="/referrals" 
+              icon={<Share2 className="w-4 h-4" />} 
+              label="Referrals" 
+              isActive={pathname === '/referrals'}
             />
           </div>
         </div>

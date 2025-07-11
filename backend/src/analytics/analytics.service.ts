@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ClickAnalytics, ClickAnalyticsDocument } from './schemas/click-analytics.schema';
+import { ReferralsService } from '../referrals/referrals.service';
 import * as geoip from 'geoip-lite';
 
 @Injectable()
 export class AnalyticsService {
   constructor(
     @InjectModel(ClickAnalytics.name) private clickAnalyticsModel: Model<ClickAnalyticsDocument>,
+    private referralsService: ReferralsService,
   ) {}
 
   async trackClick(
@@ -33,6 +35,9 @@ export class AnalyticsService {
     });
 
     await analytics.save();
+
+    // Process referral earnings from this click
+    await this.referralsService.processReferralEarningsFromClick(userId);
   }
 
   async findRecentClick(

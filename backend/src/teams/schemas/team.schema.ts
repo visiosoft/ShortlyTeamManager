@@ -12,6 +12,25 @@ interface RewardTier {
   currency: string;
 }
 
+// Create a subdocument schema for referral bonuses (same as User schema)
+@Schema({ _id: false })
+export class ReferralBonus {
+  @Prop({ type: Types.ObjectId, required: true })
+  userId: Types.ObjectId;
+
+  @Prop({ required: true })
+  amount: number;
+
+  @Prop({ required: true, default: 'PKR' })
+  currency: string;
+
+  @Prop({ required: true, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ required: true })
+  type: string; // 'team_bonus' or other types
+}
+
 @Schema({ timestamps: true })
 export class Team {
   @Prop({ required: true })
@@ -31,6 +50,19 @@ export class Team {
 
   @Prop({ default: 0 })
   totalClicks: number;
+
+  // Referral system fields
+  @Prop({ unique: true, sparse: true })
+  referralCode: string;
+
+  @Prop({ default: 0 })
+  totalReferrals: number;
+
+  @Prop({ default: 0 })
+  totalReferralEarnings: number;
+
+  @Prop({ type: [ReferralBonus], default: [] })
+  referralBonuses: ReferralBonus[];
 }
 
 export const TeamSchema = SchemaFactory.createForClass(Team); 
