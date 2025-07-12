@@ -9,6 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CreateTeamDto } from '../teams/dto/create-team.dto';
 import { ReferralsService } from '../referrals/referrals.service';
+import { UrlsService } from '../urls/urls.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
     private jwtService: JwtService,
     private referralsService: ReferralsService,
+    private urlsService: UrlsService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -92,6 +94,17 @@ export class AuthService {
     // Generate unique referral code for the user
     await this.referralsService.generateUserReferralCode(savedUser._id.toString());
 
+    // Assign default URLs to the new user
+    try {
+      // LOGGING: Print userId and teamId before assignment
+      console.log(`[register] Assigning default URLs to userId: ${savedUser._id}, teamId: ${savedTeam._id}`);
+      const assignedUrls = await this.urlsService.assignDefaultUrlsToNewUser(savedUser._id.toString(), savedTeam._id.toString());
+      console.log(`[register] Assignment completed. Assigned ${assignedUrls.length} URLs to new user.`);
+    } catch (error) {
+      console.error('Failed to assign default URLs to new user:', error);
+      // Don't fail registration if default URL assignment fails
+    }
+
     // Reload the user to get the updated referral code
     const updatedUser = await this.userModel.findById(savedUser._id);
 
@@ -166,6 +179,14 @@ export class AuthService {
 
     // Generate unique referral code for the new user
     await this.referralsService.generateUserReferralCode(savedUser._id.toString());
+
+    // Assign default URLs to the new user
+    try {
+      await this.urlsService.assignDefaultUrlsToNewUser(savedUser._id.toString(), referringTeam._id.toString());
+    } catch (error) {
+      console.error('Failed to assign default URLs to new user:', error);
+      // Don't fail registration if default URL assignment fails
+    }
 
     // Reload the user to get the updated referral code
     const updatedUser = await this.userModel.findById(savedUser._id);

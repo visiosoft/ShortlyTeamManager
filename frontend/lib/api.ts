@@ -58,6 +58,7 @@ export const api = {
     getById: (id: string) => `/api/urls/${id}`,
     delete: (id: string) => `/api/urls/${id}`,
     regenerate: (id: string) => `/api/urls/${id}/regenerate`,
+    default: '/api/urls/default',
   },
   
   // User endpoints

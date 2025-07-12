@@ -140,6 +140,13 @@ export default function Sidebar() {
               isActive={pathname === '/admin/payouts'}
               disabled={user?.role !== 'admin'}
             />
+            <NavItem 
+              href="/admin/default-urls" 
+              icon={<LinkIcon className="w-4 h-4" />} 
+              label="Default URLs" 
+              isActive={pathname === '/admin/default-urls'}
+              disabled={user?.role !== 'admin'}
+            />
           </div>
         </div>
 

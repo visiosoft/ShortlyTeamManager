@@ -51,7 +51,7 @@ export class ReferralsService {
 
   async getUserReferralLink(userId: string): Promise<string> {
     const referralCode = await this.getUserReferralCode(userId);
-    const baseUrl = process.env.FRONTEND_URL || 'https://shorly.uk';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://shorly.uk';
     return `${baseUrl}/register?ref=${referralCode}`;
   }
 
@@ -138,7 +138,7 @@ export class ReferralsService {
 
   async getReferralLink(teamId: string): Promise<string> {
     const referralCode = await this.getReferralCode(teamId);
-    const baseUrl = process.env.FRONTEND_URL || 'https://shorly.uk';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://shorly.uk';
     return `${baseUrl}/register?ref=${referralCode}`;
   }
 

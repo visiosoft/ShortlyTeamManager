@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { Url, UrlDocument } from './schemas/url.schema';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { CreateAdminUrlDto } from './dto/create-admin-url.dto';
+import { CreateDefaultUrlDto } from './dto/create-default-url.dto';
 import { UrlResponseDto } from './dto/url-response.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
 
@@ -375,5 +376,196 @@ export class UrlsService {
       createdAt: url.createdAt || new Date(),
       updatedAt: url.updatedAt || new Date(),
     };
+  }
+
+  // Default URL Management Methods
+
+  async createDefaultUrl(createDefaultUrlDto: CreateDefaultUrlDto, adminId: string, teamId: string): Promise<UrlResponseDto[]> {
+    try {
+      const { originalUrl, customShortCode, title, description, assignToUserIds } = createDefaultUrlDto;
+
+      // Validate IDs
+      const validAdminId = new Types.ObjectId(adminId);
+      const validTeamId = Types.ObjectId.createFromHexString(teamId);
+
+      // Check if custom short code is provided and if it's already taken
+      if (customShortCode) {
+        const existingUrl = await this.urlModel.findOne({ shortCode: customShortCode });
+        if (existingUrl) {
+          throw new ConflictException('Custom short code is already taken');
+        }
+      }
+
+      // Generate short code if not provided
+      let shortCode = customShortCode;
+      if (!shortCode) {
+        do {
+          shortCode = nanoid(6);
+        } while (await this.urlModel.findOne({ shortCode }));
+      }
+
+      const createdUrls: UrlResponseDto[] = [];
+
+      // If specific user IDs are provided, create URLs for those users
+      if (assignToUserIds && assignToUserIds.length > 0) {
+        for (const userId of assignToUserIds) {
+          const validUserId = new Types.ObjectId(userId);
+          const url = new this.urlModel({
+            originalUrl,
+            shortCode: `${shortCode}_${nanoid(4)}`, // Add unique suffix for each user
+            userId: validUserId,
+            teamId: validTeamId,
+            title,
+            description,
+            isAdminCreated: true,
+            createdByAdmin: validAdminId,
+          });
+
+          const savedUrl = await url.save();
+          createdUrls.push(this.mapToResponseDto(savedUrl));
+        }
+      } else {
+        // Create a template URL that can be assigned to new users
+        // Don't assign to any specific user - this is a template
+        const url = new this.urlModel({
+          originalUrl,
+          shortCode,
+          userId: null, // No specific user - this is a template
+          teamId: validTeamId,
+          title,
+          description,
+          isAdminCreated: true,
+          createdByAdmin: validAdminId,
+          isTemplate: true, // Mark as template
+        });
+
+        const savedUrl = await url.save();
+        createdUrls.push(this.mapToResponseDto(savedUrl));
+      }
+
+      return createdUrls;
+    } catch (error) {
+      console.error('Error in createDefaultUrl:', error);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new Error('Failed to create default URLs');
+    }
+  }
+
+  async assignDefaultUrlsToNewUser(userId: string, teamId: string): Promise<UrlResponseDto[]> {
+    try {
+      // Validate IDs
+      const validUserId = new Types.ObjectId(userId);
+      const validTeamId = Types.ObjectId.createFromHexString(teamId);
+      
+      // LOGGING: Print teamId and userId
+      console.log(`[assignDefaultUrlsToNewUser] userId: ${userId}, teamId: ${teamId}`);
+      
+      // Find all template URLs (admin-created URLs that are templates)
+      // Also include URLs without isTemplate flag for backward compatibility
+      // Also include global templates (URLs without teamId or with null/undefined teamId)
+      const templateUrls = await this.urlModel.find({
+        $and: [
+          {
+            $or: [
+              { teamId: validTeamId }, // Team-specific templates
+              { teamId: { $exists: false } }, // Global templates (no teamId field)
+              { teamId: null }, // Global templates (null teamId)
+              { teamId: undefined } // Global templates (undefined teamId)
+            ]
+          },
+          {
+            $or: [
+              { isTemplate: true },
+              { isTemplate: { $exists: false } } // Include URLs created before isTemplate field was added
+            ]
+          }
+        ],
+        isAdminCreated: true,
+      });
+      // LOGGING: Print how many template URLs found
+      console.log(`[assignDefaultUrlsToNewUser] Found ${templateUrls.length} template URLs for teamId: ${teamId}`);
+
+      const assignedUrls: UrlResponseDto[] = [];
+
+      for (const templateUrl of templateUrls) {
+        // Create a new URL for the user based on the template
+        const newUrl = new this.urlModel({
+          originalUrl: templateUrl.originalUrl,
+          shortCode: `${templateUrl.shortCode}_${nanoid(4)}`, // Add unique suffix
+          userId: validUserId,
+          teamId: validTeamId,
+          title: templateUrl.title,
+          description: templateUrl.description,
+          isAdminCreated: true,
+          createdByAdmin: templateUrl.createdByAdmin,
+        });
+
+        const savedUrl = await newUrl.save();
+        assignedUrls.push(this.mapToResponseDto(savedUrl));
+      }
+
+      return assignedUrls;
+    } catch (error) {
+      console.error('Error in assignDefaultUrlsToNewUser:', error);
+      throw new Error('Failed to assign default URLs to new user');
+    }
+  }
+
+  async getDefaultUrls(teamId: string): Promise<UrlResponseDto[]> {
+    try {
+      // Validate teamId format
+      const validTeamId = Types.ObjectId.createFromHexString(teamId);
+      
+      const defaultUrls = await this.urlModel.find({
+        $and: [
+          {
+            $or: [
+              { teamId: validTeamId }, // Team-specific templates
+              { teamId: { $exists: false } }, // Global templates (no teamId field)
+              { teamId: null }, // Global templates (null teamId)
+              { teamId: undefined } // Global templates (undefined teamId)
+            ]
+          },
+          {
+            $or: [
+              { isTemplate: true },
+              { isTemplate: { $exists: false } } // Include URLs created before isTemplate field was added
+            ]
+          }
+        ],
+        isAdminCreated: true,
+      }).populate('createdByAdmin', 'firstName lastName email');
+
+      return defaultUrls.map(url => this.mapToResponseDto(url));
+    } catch (error) {
+      console.error('Error in getDefaultUrls:', error);
+      throw new Error('Invalid team ID format or database error');
+    }
+  }
+
+  async refreshUserUrl(urlId: string, userId: string, teamId: string): Promise<UrlResponseDto> {
+    const url = await this.urlModel.findOne({
+      _id: new Types.ObjectId(urlId),
+      userId: new Types.ObjectId(userId),
+      teamId: Types.ObjectId.createFromHexString(teamId),
+    });
+
+    if (!url) {
+      throw new NotFoundException('URL not found');
+    }
+
+    // Generate new short code
+    let newShortCode;
+    do {
+      newShortCode = nanoid(6);
+    } while (await this.urlModel.findOne({ shortCode: newShortCode }));
+
+    // Update the URL with new short code
+    url.shortCode = newShortCode;
+    const updatedUrl = await url.save();
+
+    return this.mapToResponseDto(updatedUrl);
   }
 } 

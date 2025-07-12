@@ -17,6 +17,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@ne
 import { UrlsService } from './urls.service';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { CreateAdminUrlDto } from './dto/create-admin-url.dto';
+import { CreateDefaultUrlDto } from './dto/create-default-url.dto';
 import { UrlResponseDto } from './dto/url-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -119,6 +120,44 @@ export class UrlsController {
     @Query('limit') limit: number = 10,
   ) {
     return this.urlsService.findAllByTeam(req.user.teamId, page, limit);
+  }
+
+  // Default URL Management Endpoints
+
+  @Post('urls/default')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create default URLs for new users (Admin only)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Default URLs created successfully',
+    type: [UrlResponseDto],
+  })
+  @ApiResponse({ status: 400, description: 'Invalid URL provided' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 409, description: 'Custom short code already taken' })
+  async createDefaultUrl(
+    @Body() createDefaultUrlDto: CreateDefaultUrlDto,
+    @Request() req,
+  ): Promise<UrlResponseDto[]> {
+    return this.urlsService.createDefaultUrl(createDefaultUrlDto, req.user.userId, req.user.teamId);
+  }
+
+  @Get('urls/default')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all default URLs for the team (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Default URLs retrieved successfully',
+    type: [UrlResponseDto],
+  })
+  async getDefaultUrls(
+    @Request() req,
+  ): Promise<UrlResponseDto[]> {
+    return this.urlsService.getDefaultUrls(req.user.teamId);
   }
 
   @Get('urls/:id')
@@ -248,5 +287,23 @@ export class UrlsController {
     @Request() req,
   ): Promise<UrlResponseDto> {
     return this.urlsService.regenerateShortUrl(id, req.user.teamId);
+  }
+
+  @Post('urls/:id/refresh')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh/regenerate short URL code for user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Short URL refreshed successfully',
+    type: UrlResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Permission denied' })
+  @ApiResponse({ status: 404, description: 'URL not found' })
+  async refreshUserUrl(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<UrlResponseDto> {
+    return this.urlsService.refreshUserUrl(id, req.user.userId, req.user.teamId);
   }
 } 

@@ -13,12 +13,14 @@ import { Team, TeamSchema } from '../teams/schemas/team.schema';
 import { UsersModule } from '../users/users.module';
 import { TeamsModule } from '../teams/teams.module';
 import { ReferralsModule } from '../referrals/referrals.module';
+import { UrlsModule } from '../urls/urls.module';
 
 @Module({
   imports: [
     UsersModule,
     TeamsModule,
     ReferralsModule,
+    UrlsModule,
     PassportModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
