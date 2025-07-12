@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Team, TeamDocument } from '../teams/schemas/team.schema';
 import * as nanoid from 'nanoid';
@@ -10,6 +11,7 @@ export class ReferralsService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
+    private configService: ConfigService,
   ) {}
 
   async generateUserReferralCode(userId: string): Promise<string> {
@@ -51,7 +53,7 @@ export class ReferralsService {
 
   async getUserReferralLink(userId: string): Promise<string> {
     const referralCode = await this.getUserReferralCode(userId);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://shorly.uk';
+    const baseUrl = this.configService.get<string>('FRONTEND_URL') || this.configService.get<string>('NEXT_PUBLIC_BASE_URL') || 'https://shorly.uk';
     return `${baseUrl}/register?ref=${referralCode}`;
   }
 
@@ -138,7 +140,7 @@ export class ReferralsService {
 
   async getReferralLink(teamId: string): Promise<string> {
     const referralCode = await this.getReferralCode(teamId);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://shorly.uk';
+    const baseUrl = this.configService.get<string>('FRONTEND_URL') || this.configService.get<string>('NEXT_PUBLIC_BASE_URL') || 'https://shorly.uk';
     return `${baseUrl}/register?ref=${referralCode}`;
   }
 
