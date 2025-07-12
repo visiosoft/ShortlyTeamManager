@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, BarChart3, Users, Link as LinkIcon, TrendingUp, DollarSign, FileText, Plus, Shield, CreditCard, Share2 } from 'lucide-react';
+import { LogOut, BarChart3, Users, Link as LinkIcon, TrendingUp, DollarSign, FileText, Plus, Shield, CreditCard, Share2, Globe } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -186,6 +186,7 @@ export default function Sidebar() {
               label="Referrals" 
               isActive={pathname === '/referrals'}
             />
+
           </div>
         </div>
       </nav>
