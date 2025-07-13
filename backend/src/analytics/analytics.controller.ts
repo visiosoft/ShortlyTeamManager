@@ -145,4 +145,18 @@ export class AnalyticsController {
       endDate,
     );
   }
+
+  @Get('analytics/referrers')
+  async getReferrerAnalytics(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.analyticsService.getReferrerAnalytics(
+      req.user.userId,
+      req.user.teamId,
+      startDate,
+      endDate,
+    );
+  }
 } 

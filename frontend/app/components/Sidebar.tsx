@@ -174,6 +174,14 @@ export default function Sidebar() {
               label="My Clicks" 
               isActive={pathname === '/my-clicks'}
             />
+            {user?.role !== 'admin' && (
+              <NavItem 
+                href="/platform-clicks" 
+                icon={<BarChart3 className="w-4 h-4" />} 
+                label="Platform Clicks" 
+                isActive={pathname === '/platform-clicks'}
+              />
+            )}
             <NavItem 
               href="/rewards" 
               icon={<DollarSign className="w-4 h-4" />} 
@@ -181,19 +189,20 @@ export default function Sidebar() {
               isActive={pathname === '/rewards'}
               disabled={user?.role !== 'admin'}
             />
-            <NavItem 
-              href="/payment-info" 
-              icon={<CreditCard className="w-4 h-4" />} 
-              label="Payment Info" 
-              isActive={pathname === '/payment-info'}
-            />
+            {user?.role !== 'admin' && (
+              <NavItem 
+                href="/payment-info" 
+                icon={<CreditCard className="w-4 h-4" />} 
+                label="Payment Info" 
+                isActive={pathname === '/payment-info'}
+              />
+            )}
             <NavItem 
               href="/referrals" 
               icon={<Share2 className="w-4 h-4" />} 
               label="Referrals" 
               isActive={pathname === '/referrals'}
             />
-
           </div>
         </div>
       </nav>

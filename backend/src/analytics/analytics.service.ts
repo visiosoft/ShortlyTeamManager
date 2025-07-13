@@ -666,4 +666,112 @@ export class AnalyticsService {
       topCountries
     };
   }
+
+  async getReferrerAnalytics(
+    userId: string,
+    teamId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Array<{
+    referrer: string;
+    referrerName: string;
+    clicks: number;
+    percentage: number;
+  }>> {
+    const queryFilter: any = {
+      userId: new Types.ObjectId(userId),
+      teamId: Types.ObjectId.createFromHexString(teamId),
+    };
+
+    // Add date range filtering if provided
+    if (startDate || endDate) {
+      queryFilter.createdAt = {};
+      if (startDate) {
+        queryFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        queryFilter.createdAt.$lte = new Date(endDate + 'T23:59:59.999Z');
+      }
+    }
+
+    // Get referrer statistics
+    const referrerStats = await this.clickAnalyticsModel.aggregate([
+      {
+        $match: queryFilter
+      },
+      {
+        $group: {
+          _id: '$referer',
+          clicks: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { clicks: -1 }
+      }
+    ]);
+
+    const totalClicks = await this.clickAnalyticsModel.countDocuments(queryFilter);
+
+    return referrerStats.map(stat => {
+      const referrerName = this.getReferrerDisplayName(stat._id);
+      return {
+        referrer: stat._id || '',
+        referrerName,
+        clicks: stat.clicks,
+        percentage: totalClicks > 0 ? Math.round((stat.clicks / totalClicks) * 100 * 100) / 100 : 0,
+      };
+    });
+  }
+
+  private getReferrerDisplayName(referer: string): string {
+    if (!referer) return 'Direct';
+    
+    try {
+      const url = new URL(referer);
+      const hostname = url.hostname.toLowerCase();
+      
+      // Common social media platforms
+      if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'Facebook';
+      if (hostname.includes('twitter.com') || hostname.includes('x.com')) return 'Twitter/X';
+      if (hostname.includes('instagram.com')) return 'Instagram';
+      if (hostname.includes('linkedin.com')) return 'LinkedIn';
+      if (hostname.includes('youtube.com')) return 'YouTube';
+      if (hostname.includes('tiktok.com')) return 'TikTok';
+      if (hostname.includes('reddit.com')) return 'Reddit';
+      if (hostname.includes('pinterest.com')) return 'Pinterest';
+      if (hostname.includes('snapchat.com')) return 'Snapchat';
+      if (hostname.includes('whatsapp.com')) return 'WhatsApp';
+      if (hostname.includes('telegram.org')) return 'Telegram';
+      if (hostname.includes('discord.com')) return 'Discord';
+      if (hostname.includes('slack.com')) return 'Slack';
+      if (hostname.includes('google.com') || hostname.includes('google.co')) return 'Google';
+      if (hostname.includes('bing.com')) return 'Bing';
+      if (hostname.includes('yahoo.com')) return 'Yahoo';
+      if (hostname.includes('duckduckgo.com')) return 'DuckDuckGo';
+      if (hostname.includes('github.com')) return 'GitHub';
+      if (hostname.includes('stackoverflow.com')) return 'Stack Overflow';
+      if (hostname.includes('medium.com')) return 'Medium';
+      if (hostname.includes('wordpress.com')) return 'WordPress';
+      if (hostname.includes('wix.com')) return 'Wix';
+      if (hostname.includes('squarespace.com')) return 'Squarespace';
+      if (hostname.includes('shopify.com')) return 'Shopify';
+      if (hostname.includes('amazon.com') || hostname.includes('amazon.co')) return 'Amazon';
+      if (hostname.includes('ebay.com')) return 'eBay';
+      if (hostname.includes('etsy.com')) return 'Etsy';
+      if (hostname.includes('craigslist.org')) return 'Craigslist';
+      if (hostname.includes('gmail.com') || hostname.includes('mail.google.com')) return 'Gmail';
+      if (hostname.includes('outlook.com') || hostname.includes('hotmail.com')) return 'Outlook';
+      if (hostname.includes('yahoo.com') && url.pathname.includes('mail')) return 'Yahoo Mail';
+      
+      // Return the hostname if no specific match
+      return hostname.replace('www.', '');
+    } catch (error) {
+      // If URL parsing fails, try to extract domain from the string
+      const domainMatch = referer.match(/https?:\/\/([^\/]+)/);
+      if (domainMatch) {
+        return domainMatch[1].replace('www.', '');
+      }
+      return 'Unknown';
+    }
+  }
 } 

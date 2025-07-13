@@ -462,28 +462,17 @@ export class UrlsService {
       // LOGGING: Print teamId and userId
       console.log(`[assignDefaultUrlsToNewUser] userId: ${userId}, teamId: ${teamId}`);
       
-      // Find all template URLs (admin-created URLs that are templates)
-      // Also include URLs without isTemplate flag for backward compatibility
-      // Also include global templates (URLs without teamId or with null/undefined teamId)
+      // Find all admin-created URLs that are templates (no specific user assigned)
+      // This includes both team-specific and global templates
       const templateUrls = await this.urlModel.find({
-        $and: [
-          {
-            $or: [
-              { teamId: validTeamId }, // Team-specific templates
-              { teamId: { $exists: false } }, // Global templates (no teamId field)
-              { teamId: null }, // Global templates (null teamId)
-              { teamId: undefined } // Global templates (undefined teamId)
-            ]
-          },
-          {
-            $or: [
-              { isTemplate: true },
-              { isTemplate: { $exists: false } } // Include URLs created before isTemplate field was added
-            ]
-          }
-        ],
         isAdminCreated: true,
+        $or: [
+          { userId: { $exists: false } }, // No userId field
+          { userId: null }, // userId is null
+          { userId: undefined } // userId is undefined
+        ]
       });
+      
       // LOGGING: Print how many template URLs found
       console.log(`[assignDefaultUrlsToNewUser] Found ${templateUrls.length} template URLs for teamId: ${teamId}`);
 

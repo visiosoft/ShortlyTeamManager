@@ -113,9 +113,12 @@ export default function AnalyticsPage() {
         return JSON.parse(cached);
       }
     }
-    // Default to last 30 days
-    const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Default: start date is yesterday, end date is today
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const endDate = today.toISOString().split('T')[0];
+    const startDate = yesterday.toISOString().split('T')[0];
     return { startDate, endDate };
   });
   

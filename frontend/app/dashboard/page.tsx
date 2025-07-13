@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { Link, Copy, ExternalLink, BarChart3, Users, LogOut, Plus, MousePointer, TrendingUp, Shield } from 'lucide-react'
+import { Link, Copy, ExternalLink, BarChart3, Users, LogOut, Plus, MousePointer, TrendingUp, Shield, DollarSign } from 'lucide-react'
 import apiClient from '@/lib/axios'
 import { api } from '@/lib/api'
 
@@ -101,8 +101,32 @@ export default function Dashboard() {
 
   const fetchUrls = async () => {
     try {
-      const response = await apiClient.get(api.urls.myUrls)
-      setUrls(response.data.urls)
+      // Fetch both user-created URLs and admin-assigned URLs
+      const [myUrlsResponse, assignedUrlsResponse] = await Promise.all([
+        apiClient.get(api.urls.myUrls),
+        apiClient.get(api.urls.assignedToMe)
+      ])
+      
+      // Combine user-created URLs with admin-assigned URLs
+      const myUrls = myUrlsResponse.data.urls || []
+      const assignedUrls = assignedUrlsResponse.data.urls || []
+      
+      // Create a map to avoid duplicates (in case a URL appears in both lists)
+      const urlMap = new Map()
+      
+      // Add user-created URLs first
+      myUrls.forEach((url: UrlData) => {
+        urlMap.set(url.id, url)
+      })
+      
+      // Add admin-assigned URLs (these will override user-created ones if same ID)
+      assignedUrls.forEach((url: UrlData) => {
+        urlMap.set(url.id, url)
+      })
+      
+      // Convert map back to array
+      const combinedUrls = Array.from(urlMap.values())
+      setUrls(combinedUrls)
     } catch (error) {
       console.error('Error fetching URLs:', error)
     }
@@ -279,7 +303,101 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* Show URL breakdown for all users */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Admin-Assigned URLs</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {urls.filter(url => url.isAdminCreated).length}
+                </p>
+                <p className="text-xs text-blue-600">Default URLs</p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Earnings Section */}
+        {user.earnings && (
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Your Earnings</h2>
+              <a 
+                href="/platform-clicks" 
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                View Platform Clicks →
+              </a>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">Total Earnings</p>
+                    <p className="text-xl font-bold text-green-900">
+                      {user.earnings.totalEarnings} {user.earnings.currency}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {user.earnings.breakdown && user.earnings.breakdown.length > 0 && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <MousePointer className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-blue-800">Total Clicks</p>
+                      <p className="text-xl font-bold text-blue-900">
+                        {user.earnings.breakdown.reduce((sum, item) => sum + item.clicks, 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-purple-800">Reward Milestones</p>
+                    <p className="text-xl font-bold text-purple-900">
+                      {user.earnings.breakdown ? user.earnings.breakdown.length : 0}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {user.earnings.breakdown && user.earnings.breakdown.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Earnings Breakdown</h3>
+                <div className="space-y-2">
+                  {user.earnings.breakdown.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">
+                        {item.clicks} clicks
+                      </span>
+                      <span className="font-medium text-green-600">
+                        {item.amount} {item.currency}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* URL Creation Form */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">

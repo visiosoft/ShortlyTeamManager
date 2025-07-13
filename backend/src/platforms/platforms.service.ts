@@ -161,7 +161,7 @@ export class PlatformsService {
 
     // Always filter by team for data isolation
     if (teamId) {
-      filter.teamId = teamId;
+      filter.teamId = new Types.ObjectId(teamId);
     }
 
     if (userId) {
@@ -196,7 +196,7 @@ export class PlatformsService {
     
     // Filter by team if provided for data isolation
     if (teamId) {
-      filter.teamId = teamId;
+      filter.teamId = new Types.ObjectId(teamId);
     }
     
     return await this.platformClickModel
@@ -207,7 +207,7 @@ export class PlatformsService {
 
   async getTeamPlatformClicks(teamId: string): Promise<PlatformClick[]> {
     return await this.platformClickModel
-      .find({ teamId })
+      .find({ teamId: new Types.ObjectId(teamId) })
       .populate('platformId', 'name')
       .populate('userId', 'firstName lastName email')
       .sort({ date: -1 });
@@ -224,7 +224,7 @@ export class PlatformsService {
 
     // Always filter by team for data isolation
     if (teamId) {
-      filter.teamId = teamId;
+      filter.teamId = new Types.ObjectId(teamId);
     }
 
     if (userId) {

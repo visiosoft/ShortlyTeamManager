@@ -71,6 +71,59 @@ interface PredictedEarnings {
   }>;
 }
 
+// Function to convert referrer URLs to readable names
+const getReferrerDisplayName = (referer: string): string => {
+  if (!referer) return 'Direct';
+  
+  try {
+    const url = new URL(referer);
+    const hostname = url.hostname.toLowerCase();
+    
+    // Common social media platforms
+    if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'Facebook';
+    if (hostname.includes('twitter.com') || hostname.includes('x.com')) return 'Twitter/X';
+    if (hostname.includes('instagram.com')) return 'Instagram';
+    if (hostname.includes('linkedin.com')) return 'LinkedIn';
+    if (hostname.includes('youtube.com')) return 'YouTube';
+    if (hostname.includes('tiktok.com')) return 'TikTok';
+    if (hostname.includes('reddit.com')) return 'Reddit';
+    if (hostname.includes('pinterest.com')) return 'Pinterest';
+    if (hostname.includes('snapchat.com')) return 'Snapchat';
+    if (hostname.includes('whatsapp.com')) return 'WhatsApp';
+    if (hostname.includes('telegram.org')) return 'Telegram';
+    if (hostname.includes('discord.com')) return 'Discord';
+    if (hostname.includes('slack.com')) return 'Slack';
+    if (hostname.includes('google.com') || hostname.includes('google.co')) return 'Google';
+    if (hostname.includes('bing.com')) return 'Bing';
+    if (hostname.includes('yahoo.com')) return 'Yahoo';
+    if (hostname.includes('duckduckgo.com')) return 'DuckDuckGo';
+    if (hostname.includes('github.com')) return 'GitHub';
+    if (hostname.includes('stackoverflow.com')) return 'Stack Overflow';
+    if (hostname.includes('medium.com')) return 'Medium';
+    if (hostname.includes('wordpress.com')) return 'WordPress';
+    if (hostname.includes('wix.com')) return 'Wix';
+    if (hostname.includes('squarespace.com')) return 'Squarespace';
+    if (hostname.includes('shopify.com')) return 'Shopify';
+    if (hostname.includes('amazon.com') || hostname.includes('amazon.co')) return 'Amazon';
+    if (hostname.includes('ebay.com')) return 'eBay';
+    if (hostname.includes('etsy.com')) return 'Etsy';
+    if (hostname.includes('craigslist.org')) return 'Craigslist';
+    if (hostname.includes('gmail.com') || hostname.includes('mail.google.com')) return 'Gmail';
+    if (hostname.includes('outlook.com') || hostname.includes('hotmail.com')) return 'Outlook';
+    if (hostname.includes('yahoo.com') && url.pathname.includes('mail')) return 'Yahoo Mail';
+    
+    // Return the hostname if no specific match
+    return hostname.replace('www.', '');
+  } catch (error) {
+    // If URL parsing fails, try to extract domain from the string
+    const domainMatch = referer.match(/https?:\/\/([^\/]+)/);
+    if (domainMatch) {
+      return domainMatch[1].replace('www.', '');
+    }
+    return 'Unknown';
+  }
+};
+
 export default function MyClicksPage() {
   const router = useRouter();
   const [data, setData] = useState<MyTotalClicksData | null>(null);
@@ -541,6 +594,61 @@ export default function MyClicksPage() {
               )}
             </div>
 
+            {/* Referrer Analytics */}
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Globe2 className="h-5 w-5 mr-2 text-green-600" />
+                Traffic Sources
+              </h3>
+              
+              {(() => {
+                // Calculate referrer statistics
+                const referrerStats = data!.detailedClicks.reduce((acc, click) => {
+                  const referrerName = getReferrerDisplayName(click.referer);
+                  acc[referrerName] = (acc[referrerName] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>);
+                
+                const referrerData = Object.entries(referrerStats)
+                  .map(([name, clicks]) => ({ name, clicks, percentage: (clicks / data!.totalClicks) * 100 }))
+                  .sort((a, b) => b.clicks - a.clicks);
+                
+                return (
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      {referrerData.slice(0, 6).map((referrer) => (
+                        <div key={referrer.name} className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{referrer.name}</p>
+                              <p className="text-xs text-gray-500">{referrer.clicks} clicks</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-600">{referrer.percentage.toFixed(1)}%</p>
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
+                                <div 
+                                  className="bg-green-500 h-2 rounded-full"
+                                  style={{ width: `${Math.min(referrer.percentage, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {referrerData.length > 6 && (
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500">
+                          And {referrerData.length - 6} more sources...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Detailed Clicks Table */}
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -556,6 +664,7 @@ export default function MyClicksPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrer</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     </tr>
                   </thead>
@@ -569,6 +678,24 @@ export default function MyClicksPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{click.ipAddress}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{click.city}, {click.country}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {click.referer ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {getReferrerDisplayName(click.referer)}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                Direct
+                              </span>
+                            )}
+                          </div>
+                          {click.referer && (
+                            <div className="text-xs text-gray-500 truncate max-w-xs" title={click.referer}>
+                              {click.referer}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(click.createdAt).toLocaleDateString()}

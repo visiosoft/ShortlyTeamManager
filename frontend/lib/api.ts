@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // API utility functions with centralized configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009';
 
@@ -85,6 +87,7 @@ export const api = {
     countriesDetailed: '/api/analytics/countries/detailed',
     userCountriesDetailed: '/api/analytics/user/countries/detailed',
     teamMembers: '/api/analytics/team-members',
+    referrers: '/api/analytics/referrers',
     // Admin analytics endpoints
     admin: {
       teamTotalClicksMonth: '/api/analytics/admin/team-total-clicks-month',
@@ -128,4 +131,16 @@ export const api = {
     myClicks: '/api/platforms/clicks/my-clicks',
     myTeamClicks: '/api/platforms/clicks/my-team',
   },
-}; 
+};
+
+export async function deletePlatform(id: string, token: string) {
+  return axios.delete(`/api/platforms/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function deletePlatformClick(clickId: string, token: string) {
+  return axios.delete(`/api/platforms/clicks/${clickId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+} 

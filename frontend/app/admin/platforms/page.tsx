@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { api, apiCall, getAuthHeaders } from '../../../lib/api';
+import { api, apiCall, getAuthHeaders, deletePlatform, deletePlatformClick } from '../../../lib/api';
 
 interface Platform {
   _id: string;
@@ -65,18 +65,40 @@ export default function PlatformsPage() {
     notes: ''
   });
 
+  // Date filter state
+  const [dateFilters, setDateFilters] = useState({
+    startDate: '',
+    endDate: ''
+  });
+
+  // User filter state
+  const [userFilter, setUserFilter] = useState('');
+
   useEffect(() => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'clicks') {
+      fetchData();
+    }
+  }, [dateFilters, userFilter]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Build query parameters for platform clicks
+      const clickParams = new URLSearchParams();
+      if (dateFilters.startDate) clickParams.append('startDate', dateFilters.startDate);
+      if (dateFilters.endDate) clickParams.append('endDate', dateFilters.endDate);
+      if (userFilter) clickParams.append('userId', userFilter);
+      
       const [platformsRes, clicksRes, usersRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/platforms`, {
           headers: getAuthHeaders()
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/platforms/clicks/all`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/platforms/clicks/all?${clickParams.toString()}`, {
           headers: getAuthHeaders()
         }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3009'}/api/users/team-members`, {
@@ -168,16 +190,25 @@ export default function PlatformsPage() {
     }
   };
 
-  const deletePlatform = async (id: string) => {
+  const handleDeletePlatform = async (id: string) => {
     if (!confirm('Are you sure you want to delete this platform?')) return;
     
     try {
-      await apiCall(api.platforms.delete(id), {
-        method: 'DELETE'
-      });
+      await deletePlatform(id, getAuthHeaders().Authorization?.replace('Bearer ', '') || '');
       fetchData();
     } catch (error) {
       console.error('Error deleting platform:', error);
+    }
+  };
+
+  const handleDeletePlatformClick = async (clickId: string) => {
+    if (!confirm('Are you sure you want to delete this platform click record?')) return;
+    
+    try {
+      await deletePlatformClick(clickId, getAuthHeaders().Authorization?.replace('Bearer ', '') || '');
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting platform click:', error);
     }
   };
 
@@ -233,6 +264,49 @@ export default function PlatformsPage() {
     }
     
     return null;
+  };
+
+  const handleDateFilterChange = () => {
+    fetchData();
+  };
+
+  const clearDateFilters = () => {
+    setDateFilters({
+      startDate: '',
+      endDate: ''
+    });
+    setUserFilter('');
+    // fetchData will be called in useEffect when filters change
+  };
+
+  // Calculate totals
+  const calculateTotals = () => {
+    const totals = platformClicks.reduce((acc, click) => {
+      acc.totalClicks += click.clicks;
+      acc.totalEarnings += click.earnings;
+      return acc;
+    }, { totalClicks: 0, totalEarnings: 0 });
+
+    return totals;
+  };
+
+  // Calculate totals by user
+  const calculateTotalsByUser = () => {
+    const userTotals = platformClicks.reduce((acc: { [key: string]: { name: string; totalClicks: number; totalEarnings: number } }, click) => {
+      const userId = click.userId._id;
+      if (!acc[userId]) {
+        acc[userId] = {
+          name: `${click.userId.firstName} ${click.userId.lastName}`,
+          totalClicks: 0,
+          totalEarnings: 0
+        };
+      }
+      acc[userId].totalClicks += click.clicks;
+      acc[userId].totalEarnings += click.earnings;
+      return acc;
+    }, {});
+
+    return Object.values(userTotals);
   };
 
   if (loading) {
@@ -351,7 +425,7 @@ export default function PlatformsPage() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => deletePlatform(platform._id)}
+                            onClick={() => handleDeletePlatform(platform._id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -381,6 +455,64 @@ export default function PlatformsPage() {
             </button>
           </div>
 
+          {/* Date Filters */}
+          <div className="bg-white shadow rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={dateFilters.startDate}
+                  onChange={(e) => setDateFilters({ ...dateFilters, startDate: e.target.value })}
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={dateFilters.endDate}
+                  onChange={(e) => setDateFilters({ ...dateFilters, endDate: e.target.value })}
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Users</option>
+                  {users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end space-x-2">
+                <button
+                  onClick={handleDateFilterChange}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+                >
+                  Apply Filter
+                </button>
+                <button
+                  onClick={clearDateFilters}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 text-sm"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            {(dateFilters.startDate || dateFilters.endDate || userFilter) && (
+              <div className="mt-2 text-sm text-gray-600">
+                Filtering: {dateFilters.startDate && `From ${dateFilters.startDate}`} {dateFilters.startDate && dateFilters.endDate && 'to'} {dateFilters.endDate && `To ${dateFilters.endDate}`} {userFilter && `, User: ${users.find(u => u._id === userFilter)?.firstName} ${users.find(u => u._id === userFilter)?.lastName}`}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white shadow rounded-lg">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -406,6 +538,9 @@ export default function PlatformsPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Added By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -444,12 +579,81 @@ export default function PlatformsPage() {
                           {click.addedBy.firstName} {click.addedBy.lastName}
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDeletePlatformClick(click._id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+
+          {/* Totals Section */}
+          {platformClicks.length > 0 && (
+            <div className="bg-white shadow rounded-lg p-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
+              
+              {/* Overall Totals */}
+              <div className="mb-6">
+                <h4 className="text-md font-medium text-gray-700 mb-3">Overall Totals</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="text-sm text-blue-600 font-medium">Total Clicks</div>
+                    <div className="text-2xl font-bold text-blue-900">{calculateTotals().totalClicks.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="text-sm text-green-600 font-medium">Total Earnings</div>
+                    <div className="text-2xl font-bold text-green-900">{formatCurrency(calculateTotals().totalEarnings)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* User-wise Totals */}
+              <div>
+                <h4 className="text-md font-medium text-gray-700 mb-3">Totals by User</h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Clicks
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Earnings
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {calculateTotalsByUser().map((userTotal, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{userTotal.name}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{userTotal.totalClicks.toLocaleString()}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-green-600">{formatCurrency(userTotal.totalEarnings)}</div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
