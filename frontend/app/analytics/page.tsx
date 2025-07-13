@@ -621,23 +621,29 @@ export default function AnalyticsPage() {
             {countryData.slice(0, 10).map((country, index) => (
               <div
                 key={country.countryCode}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => setSelectedCountry(selectedCountry?.countryCode === country.countryCode ? null : country)}
               >
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
-                    {index + 1}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm font-bold text-purple-600">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-base">
+                        {country.country}
+                      </p>
+                      <p className="text-sm font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                        {country.countryCode}
+                      </p>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="font-medium text-gray-900">{country.country}</p>
-                    <p className="text-sm text-gray-500">{country.countryCode}</p>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-purple-600">{country.clicks.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">
+                      {country.cities.length} cit{country.cities.length === 1 ? 'y' : 'ies'}
+                    </p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600">{country.clicks.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">
-                    {country.cities.length} cit{country.cities.length === 1 ? 'y' : 'ies'}
-                  </p>
                 </div>
               </div>
             ))}
@@ -665,15 +671,31 @@ export default function AnalyticsPage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Countries</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teamCountries.map((country, index) => (
-                  <div key={country.countryCode} className="bg-gray-50 rounded-lg p-4">
+                  <div key={country.countryCode} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{country.country}</p>
-                        <p className="text-sm text-gray-500">{country.countryCode}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-blue-600">{index + 1}</span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm leading-tight">
+                              {country.country}
+                            </p>
+                            <p className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
+                              {country.countryCode}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-600">
+                            {country.percentage.toFixed(1)}% of total clicks
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-blue-600">{country.clicks}</p>
-                        <p className="text-sm text-gray-500">{country.percentage.toFixed(1)}%</p>
+                      <div className="text-right ml-3">
+                        <p className="text-xl font-bold text-blue-600">{country.clicks.toLocaleString()}</p>
+                        <p className="text-xs text-gray-500">clicks</p>
                       </div>
                     </div>
                   </div>
@@ -688,30 +710,34 @@ export default function AnalyticsPage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Top Team Countries</h2>
               <div className="space-y-4">
                 {topTeamCountries.map((country, index) => (
-                  <div key={country.countryCode} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-600">
+                  <div key={country.countryCode} className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm font-bold text-green-600">
                           {index + 1}
                         </div>
-                        <div className="ml-3">
-                          <p className="font-medium text-gray-900">{country.country}</p>
-                          <p className="text-sm text-gray-500">{country.countryCode}</p>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-base">
+                            {country.country}
+                          </p>
+                          <p className="text-sm font-medium text-green-600 bg-green-100 px-3 py-1 rounded-full inline-block">
+                            {country.countryCode}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-green-600">{country.clicks}</p>
-                        <p className="text-sm text-gray-500">{country.percentage.toFixed(1)}%</p>
+                        <p className="text-2xl font-bold text-green-600">{country.clicks.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">{country.percentage.toFixed(1)}% of total</p>
                       </div>
                     </div>
                     {country.cities.length > 0 && (
-                      <div className="mt-3">
+                      <div className="mt-4 pt-3 border-t border-green-200">
                         <p className="text-sm font-medium text-gray-700 mb-2">Top Cities:</p>
                         <div className="flex flex-wrap gap-2">
                           {country.cities.slice(0, 5).map((city, cityIndex) => (
                             <span
                               key={cityIndex}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                              className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium"
                             >
                               {city.city} ({city.clicks})
                             </span>

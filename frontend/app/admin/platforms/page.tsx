@@ -293,10 +293,10 @@ export default function PlatformsPage() {
   // Calculate totals by user
   const calculateTotalsByUser = () => {
     const userTotals = platformClicks.reduce((acc: { [key: string]: { name: string; totalClicks: number; totalEarnings: number } }, click) => {
-      const userId = click.userId._id;
+      const userId = click.userId?._id;
       if (!acc[userId]) {
         acc[userId] = {
-          name: `${click.userId.firstName} ${click.userId.lastName}`,
+          name: `${click?.userId?.firstName} ${click?.userId?.lastName}`,
           totalClicks: 0,
           totalEarnings: 0
         };
@@ -555,9 +555,9 @@ export default function PlatformsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {click.userId.firstName} {click.userId.lastName}
+                            {click.userId?.firstName} {click.userId?.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{click.userId.email}</div>
+                          <div className="text-sm text-gray-500">{click.userId?.email}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
