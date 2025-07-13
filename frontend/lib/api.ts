@@ -106,4 +106,26 @@ export const api = {
       allPayouts: '/api/payments/admin/payouts',
     },
   },
+  
+  // Platform endpoints
+  platforms: {
+    // Platform management
+    create: '/api/platforms',
+    getAll: '/api/platforms',
+    getActive: '/api/platforms/active',
+    getById: (id: string) => `/api/platforms/${id}`,
+    update: (id: string) => `/api/platforms/${id}`,
+    delete: (id: string) => `/api/platforms/${id}`,
+    // Platform clicks
+    addClicks: '/api/platforms/clicks',
+    getAllClicks: '/api/platforms/clicks/all',
+    getUserClicks: (userId: string) => `/api/platforms/clicks/user/${userId}`,
+    getTeamClicks: (teamId: string) => `/api/platforms/clicks/team/${teamId}`,
+    getClicksStats: '/api/platforms/clicks/stats',
+    updateClicks: (clickId: string) => `/api/platforms/clicks/${clickId}`,
+    deleteClicks: (clickId: string) => `/api/platforms/clicks/${clickId}`,
+    // User-specific endpoints
+    myClicks: '/api/platforms/clicks/my-clicks',
+    myTeamClicks: '/api/platforms/clicks/my-team',
+  },
 }; 

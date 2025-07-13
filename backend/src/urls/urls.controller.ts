@@ -194,26 +194,6 @@ export class UrlsController {
     return this.urlsService.deactivateUrl(id, req.user.teamId, req.user.userId, req.user.role);
   }
 
-  @Get(':shortCode')
-  @ApiOperation({ summary: 'Redirect to original URL' })
-  @ApiResponse({ status: 302, description: 'Redirect to original URL' })
-  @ApiResponse({ status: 404, description: 'URL not found' })
-  async redirect(
-    @Param('shortCode') shortCode: string,
-    @Res() res: Response,
-    @Request() req,
-  ): Promise<void> {
-    const url = await this.urlsService.findByShortCode(shortCode);
-    debugger;
-    // Get IP address and user agent
-    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-    const userAgent = req.get('User-Agent');
-    const referer = req.get('Referer');
-    
-    await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
-    res.redirect(url.originalUrl);
-  }
-
   @Get('urls/info/:shortCode')
   @ApiOperation({ summary: 'Get URL info by short code (JSON response)' })
   @ApiResponse({ status: 200, description: 'URL info retrieved successfully' })
@@ -305,5 +285,26 @@ export class UrlsController {
     @Request() req,
   ): Promise<UrlResponseDto> {
     return this.urlsService.refreshUserUrl(id, req.user.userId, req.user.teamId);
+  }
+
+  // This dynamic route must be at the end to avoid conflicts with other routes
+  @Get(':shortCode')
+  @ApiOperation({ summary: 'Redirect to original URL' })
+  @ApiResponse({ status: 302, description: 'Redirect to original URL' })
+  @ApiResponse({ status: 404, description: 'URL not found' })
+  async redirect(
+    @Param('shortCode') shortCode: string,
+    @Res() res: Response,
+    @Request() req,
+  ): Promise<void> {
+    const url = await this.urlsService.findByShortCode(shortCode);
+    debugger;
+    // Get IP address and user agent
+    const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    const referer = req.get('Referer');
+    
+    await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
+    res.redirect(url.originalUrl);
   }
 } 
