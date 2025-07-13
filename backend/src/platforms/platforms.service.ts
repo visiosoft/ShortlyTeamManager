@@ -154,9 +154,15 @@ export class PlatformsService {
     userId?: string,
     platformId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    teamId?: string
   ): Promise<PlatformClick[]> {
     const filter: any = {};
+
+    // Always filter by team for data isolation
+    if (teamId) {
+      filter.teamId = teamId;
+    }
 
     if (userId) {
       filter.userId = userId;
@@ -185,9 +191,16 @@ export class PlatformsService {
       .sort({ date: -1 });
   }
 
-  async getUserPlatformClicks(userId: string): Promise<PlatformClick[]> {
+  async getUserPlatformClicks(userId: string, teamId?: string): Promise<PlatformClick[]> {
+    const filter: any = { userId };
+    
+    // Filter by team if provided for data isolation
+    if (teamId) {
+      filter.teamId = teamId;
+    }
+    
     return await this.platformClickModel
-      .find({ userId })
+      .find(filter)
       .populate('platformId', 'name')
       .sort({ date: -1 });
   }
@@ -204,9 +217,15 @@ export class PlatformsService {
     userId?: string,
     platformId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    teamId?: string
   ): Promise<any> {
     const filter: any = {};
+
+    // Always filter by team for data isolation
+    if (teamId) {
+      filter.teamId = teamId;
+    }
 
     if (userId) {
       filter.userId = userId;
