@@ -65,6 +65,7 @@ export default function Dashboard() {
   const [copied, setCopied] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'my-urls' | 'team-urls'>('my-urls')
   const [createdUrl, setCreatedUrl] = useState<string | null>(null)
+  const [shortCode, setShortCode] = useState<string | null>(null)
   const router = useRouter()
 
   const {
@@ -165,6 +166,7 @@ export default function Dashboard() {
       const response = await apiClient.post(api.urls.create, data)
       setUrls(prev => [response.data, ...prev])
       setCreatedUrl(response.data.shortUrl)
+      setShortCode(response.data.shortCode)
       setValue('originalUrl', response.data.shortUrl)
     } catch (error: any) {
       console.error('Error creating URL:', error)
@@ -446,12 +448,20 @@ export default function Dashboard() {
                   <p className="mt-1 text-sm text-red-600">{errors.originalUrl.message}</p>
                 )}
                 {createdUrl && (
+                  <>
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm text-green-800 font-medium">✓ URL shortened successfully!</p>
                     <p className="text-sm text-green-700 mt-1">
                       Shortened URL: <span className="font-mono">{createdUrl}</span>
+
                     </p>
                   </div>
+                  <div className="mt-2 p-3 bg-green-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-green-700 mt-1">
+                     <span className="font-mono">{"fashionstore.mom/" + shortCode}</span>
+
+                  </p>
+                </div></>
                 )}
               </div>
 
@@ -598,7 +608,8 @@ export default function Dashboard() {
                   <p className="text-gray-500 text-center py-8">No URLs created yet. Create your first short URL above!</p>
                 ) : (
                   urls.map((url) => (
-                    <UrlCard key={url.id} url={url} onCopy={copyToClipboard} copied={copied} />
+                    <UrlCard key={url.id} shortCode={shortCode} url={url} onCopy={copyToClipboard} copied={copied} />
+
                   ))
                 )}
               </div>
@@ -622,7 +633,7 @@ export default function Dashboard() {
   )
 }
 
-function UrlCard({ url, onCopy, copied }: { url: UrlData; onCopy: (text: string, id: string) => void; copied: string | null }) {
+function UrlCard({ url, onCopy, copied, shortCode }:   { url: UrlData; onCopy: (text: string, id: string) => void; copied: string | null, shortCode: string | null }) {
   return (
     <div className={`rounded-lg p-4 ${url.isAdminCreated ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
       <div className="flex items-center justify-between">
@@ -630,6 +641,7 @@ function UrlCard({ url, onCopy, copied }: { url: UrlData; onCopy: (text: string,
           <div className="flex items-center space-x-2 mb-2">
             <Link className="h-5 w-5 text-blue-600" />
             <span className="font-medium text-gray-900">{url.shortUrl}</span>
+           
             {url.isAdminCreated && (
               <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                 <Shield className="h-3 w-3" />
