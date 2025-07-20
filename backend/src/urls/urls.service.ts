@@ -8,11 +8,13 @@ import { CreateAdminUrlDto } from './dto/create-admin-url.dto';
 import { CreateDefaultUrlDto } from './dto/create-default-url.dto';
 import { UrlResponseDto } from './dto/url-response.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { Team, TeamDocument } from '../teams/schemas/team.schema';
 
 @Injectable()
 export class UrlsService {
   constructor(
     @InjectModel(Url.name) private urlModel: Model<UrlDocument>,
+    @InjectModel(Team.name) private teamModel: Model<TeamDocument>,
     private analyticsService: AnalyticsService,
   ) {}
 
@@ -206,11 +208,49 @@ export class UrlsService {
       throw new Error('Invalid team ID format');
     }
     
+    // Find the default URLs (admin-created URLs with no userId) for this team to identify the admin who created them
+    const defaultUrls = await this.urlModel.find({
+      teamId: validTeamId,
+      isAdminCreated: true,
+      $or: [
+        { userId: { $exists: false } }, // No userId field
+        { userId: null }, // userId is null
+        { userId: undefined } // userId is undefined
+      ]
+    });
+    
+    // Get unique admin IDs who created default URLs for this team
+    const adminIds = [...new Set(defaultUrls.map(url => url.createdByAdmin?.toString()).filter(Boolean))];
+    
+    console.log(`[findUrlsAssignedToUser] Found ${defaultUrls.length} default URLs for team ${teamId}`);
+    console.log(`[findUrlsAssignedToUser] Admin IDs who created default URLs: ${adminIds.join(', ')}`);
+    
+    // If no default URLs found, return empty result
+    if (adminIds.length === 0) {
+      console.log(`[findUrlsAssignedToUser] No default URLs found, returning empty result`);
+      return {
+        urls: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+    
     const query = { 
       userId: validUserId, 
       teamId: validTeamId,
-      isActive: true
+      isActive: true,
+      isAdminCreated: true,  // Only return admin-created URLs
+      createdByAdmin: { $in: adminIds },  // Only URLs created by admins who created default URLs
+      $or: [
+        { isTemplate: { $exists: false } },  // URLs created before isTemplate field
+        { isTemplate: false },  // URLs that are not templates
+        { isTemplate: null }  // URLs with null isTemplate
+      ]
     };
+    
+    console.log(`[findUrlsAssignedToUser] Query:`, JSON.stringify(query, null, 2));
     
     const [urls, total] = await Promise.all([
       this.urlModel.find(query)
@@ -221,6 +261,8 @@ export class UrlsService {
         .exec(),
       this.urlModel.countDocuments(query),
     ]);
+
+    console.log(`[findUrlsAssignedToUser] Found ${urls.length} URLs matching query`);
 
     return {
       urls: urls.map(url => this.mapToResponseDto(url)),
@@ -462,10 +504,11 @@ export class UrlsService {
       // LOGGING: Print teamId and userId
       console.log(`[assignDefaultUrlsToNewUser] userId: ${userId}, teamId: ${teamId}`);
       
-      // Find all admin-created URLs that are templates (no specific user assigned)
-      // This includes both team-specific and global templates
+      // Find admin-created URLs that are templates (no specific user assigned)
+      // Only include templates from the user's team
       const templateUrls = await this.urlModel.find({
         isAdminCreated: true,
+        teamId: validTeamId, // Only templates from user's team
         $or: [
           { userId: { $exists: false } }, // No userId field
           { userId: null }, // userId is null

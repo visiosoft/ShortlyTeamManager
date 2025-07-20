@@ -307,4 +307,11 @@ export class UrlsController {
     await this.urlsService.incrementClicks(shortCode, ipAddress, userAgent, referer);
     res.redirect(url.originalUrl);
   }
+
+  @Get('debug')
+  @UseGuards(JwtAuthGuard)
+  async debug(@Request() req) {
+    console.log('[DEBUG] Debug endpoint called');
+    return { message: 'Debug endpoint working', timestamp: new Date().toISOString() };
+  }
 } 
