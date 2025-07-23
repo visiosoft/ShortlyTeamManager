@@ -69,24 +69,24 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Create team
-    const team = new this.teamModel({
-      name: teamName,
-      description: teamDescription,
-    });
-    const savedTeam = await team.save();
+    // Use the admin's team ID directly
+    const adminTeamId = '6872137b3bd64eb1d84237d1'; // Admin's team ID
+    const adminTeam = await this.teamModel.findById(adminTeamId);
+    if (!adminTeam) {
+      throw new ConflictException('Admin team not found. Please contact support.');
+    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user in the admin's team
     const user = new this.userModel({
       email,
       password: hashedPassword,
       firstName,
       lastName,
-      teamId: savedTeam._id,
-      role: 'admin', // First user in team is admin
+      teamId: adminTeam._id,
+      role: 'user', // New users join as regular users, not admin
     });
 
     const savedUser = await user.save();
@@ -94,11 +94,11 @@ export class AuthService {
     // Generate unique referral code for the user
     await this.referralsService.generateUserReferralCode(savedUser._id.toString());
 
-    // Assign default URLs to the new user
+    // Assign default URLs to the new user (from admin's team)
     try {
       // LOGGING: Print userId and teamId before assignment
-      console.log(`[register] Assigning default URLs to userId: ${savedUser._id}, teamId: ${savedTeam._id}`);
-      const assignedUrls = await this.urlsService.assignDefaultUrlsToNewUser(savedUser._id.toString(), savedTeam._id.toString());
+      console.log(`[register] Assigning default URLs to userId: ${savedUser._id}, teamId: ${adminTeam._id}`);
+      const assignedUrls = await this.urlsService.assignDefaultUrlsToNewUser(savedUser._id.toString(), adminTeam._id.toString());
       console.log(`[register] Assignment completed. Assigned ${assignedUrls.length} URLs to new user.`);
     } catch (error) {
       console.error('Failed to assign default URLs to new user:', error);
@@ -111,7 +111,7 @@ export class AuthService {
     const payload = { 
       email: updatedUser.email, 
       sub: updatedUser._id, 
-      teamId: savedTeam._id,
+      teamId: adminTeam._id,
       role: updatedUser.role 
     };
 
@@ -123,8 +123,8 @@ export class AuthService {
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
         role: updatedUser.role,
-        teamId: savedTeam._id,
-        team: savedTeam,
+        teamId: adminTeam._id,
+        team: adminTeam,
         referralCode: updatedUser.referralCode,
       },
     };
